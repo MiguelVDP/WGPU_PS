@@ -1,0 +1,33 @@
+cmake_minimum_required(VERSION 3.0...3.24)
+project(WGPU_PS)
+
+set(CMAKE_CXX_STANDARD 17)
+
+add_executable(WGPU_PS main.cpp)
+
+target_link_libraries(WGPU_PS PRIVATE glfw webgpu)
+
+set_target_properties(WGPU_PS PROPERTIES
+        CXX_STANDARD 17
+        COMPILE_WARNING_AS_ERROR ON
+        )
+
+if (MSVC)
+    target_compile_options(WGPU_PS PRIVATE /W4)
+else()
+    target_compile_options(WGPU_PS PRIVATE -Wall -Wextra -pedantic)
+endif()
+
+if(XCODE)
+    set_target_properties(WGPU_PS PROPERTIES
+            XCODE_GENERATE_SCHEME ON
+            XCODE_SCHEME_ENABLE_GPU_FRAME_CAPTURE_MODE "Metal")
+endif()
+
+add_subdirectory(glfw)
+add_subdirectory(WebGPU-distribution-wgpu)
+
+# The application's binary must find wgpu.dll or libwgpu.so at runtime,
+# so we automatically copy it (it's called WGPU_RUNTIME_LIB in general)
+# next to the binary.
+target_copy_webgpu_binaries(WGPU_PS)
