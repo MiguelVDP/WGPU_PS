@@ -9,3 +9,6 @@ C:/WGPU_PS/cmake-build-debug/glfw/src/CMakeFiles/edit_cache.dir
 C:/WGPU_PS/cmake-build-debug/glfw/src/CMakeFiles/rebuild_cache.dir
 C:/WGPU_PS/cmake-build-debug/WebGPU-distribution-wgpu/CMakeFiles/edit_cache.dir
 C:/WGPU_PS/cmake-build-debug/WebGPU-distribution-wgpu/CMakeFiles/rebuild_cache.dir
+C:/WGPU_PS/cmake-build-debug/glfw3webgpu/CMakeFiles/glfw3webgpu.dir
+C:/WGPU_PS/cmake-build-debug/glfw3webgpu/CMakeFiles/edit_cache.dir
+C:/WGPU_PS/cmake-build-debug/glfw3webgpu/CMakeFiles/rebuild_cache.dir
