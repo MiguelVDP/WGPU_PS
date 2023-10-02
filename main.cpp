@@ -12,10 +12,9 @@ int width = 640;
 int height = 480;
 
 
-void setVertexDescription(RenderPipelineDescriptor &pipeDesc, ShaderModule shaderModule){
-    //Buffers from the information will be sent
-    pipeDesc.vertex.bufferCount = 0;
-    pipeDesc.vertex.buffers = nullptr;
+void setVertexDescription(RenderPipelineDescriptor &pipeDesc, ShaderModule shaderModule,
+                          VertexBufferLayout &vertexBufferLayout, VertexAttribute &vertexAttrib){
+
     //The shader source code
     pipeDesc.vertex.module = shaderModule;
     //The function entry point in the shader
@@ -23,6 +22,22 @@ void setVertexDescription(RenderPipelineDescriptor &pipeDesc, ShaderModule shade
     //Vertex constants
     pipeDesc.vertex.constantCount = 0;
     pipeDesc.vertex.constants = nullptr;
+
+    // == Per attribute ==
+    // Corresponds to @location(...)
+    vertexAttrib.shaderLocation = 0;
+    // Means vec2f in the shader
+    vertexAttrib.format = VertexFormat::Float32x2;
+    // Index of the first element
+    vertexAttrib.offset = 0;
+    // == Common to attributes from the same buffer ==
+    vertexBufferLayout.arrayStride = 2 * sizeof(float);
+    vertexBufferLayout.stepMode = VertexStepMode::Vertex;
+    vertexBufferLayout.attributeCount = 1;
+    vertexBufferLayout.attributes = &vertexAttrib;
+    //Buffers from the information will be sent
+    pipeDesc.vertex.bufferCount = 1;
+    pipeDesc.vertex.buffers = &vertexBufferLayout;
 }
 
 
@@ -78,6 +93,22 @@ void setFragmentDescriptor(RenderPipelineDescriptor &pipeDesc, FragmentState &fr
 
     pipeDesc.fragment = &fragmentState;
 }
+
+
+// Vertex buffer
+// There are 2 floats per vertex, one for x and one for y.
+// But in the end this is just a bunch of floats to the eyes of the GPU,
+// the *layout* will tell how to interpret this.
+std::vector<float> vertexData = {
+        // x0, y0
+        -0.5, -0.5,
+
+        // x1, y1
+        +0.5, -0.5,
+
+        // x2, y2
+        +0.0, +0.5
+};
 
 
 int main() {
@@ -138,6 +169,20 @@ int main() {
     DeviceDescriptor deviceDesc;
     deviceDesc.setDefault();
 
+    //Here we get the capabilities of our device
+    SupportedLimits supportedLimits;
+    adapter.getLimits(&supportedLimits);
+
+    //Now we set the required limits for our application
+    RequiredLimits requiredLimits = Default;
+    requiredLimits.limits.maxVertexAttributes = 1;
+    requiredLimits.limits.maxVertexBuffers = 1;
+    requiredLimits.limits.maxBufferSize = 6 * 2 * sizeof(float);
+    requiredLimits.limits.maxVertexBufferArrayStride = 2 * sizeof(float);
+    requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
+    requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
+    deviceDesc.requiredLimits = &requiredLimits;
+
     Device device = adapter.requestDevice(deviceDesc);
 
     //Set an error message for the device
@@ -185,16 +230,8 @@ int main() {
 
     const char* shaderSource = R"(
 @vertex
-fn vs_main(@builtin(vertex_index) in_vertex_index: u32) -> @builtin(position) vec4f {
-    var p = vec2f(0.0, 0.0);
-    if (in_vertex_index == 0u) {
-        p = vec2f(-0.5, -0.5);
-    } else if (in_vertex_index == 1u) {
-        p = vec2f(0.5, -0.5);
-    } else {
-        p = vec2f(0.0, 0.5);
-    }
-    return vec4f(p, 0.0, 1.0);
+fn vs_main(@location(0) in_vertex_position: vec2f) -> @builtin(position) vec4f {
+    return vec4f(in_vertex_position, 0.0, 1.0);
 }
 
 @fragment
@@ -249,9 +286,20 @@ fn fs_main() -> @location(0) vec4f {
         renderPassDesc.timestampWrites = nullptr;
         renderPassDesc.nextInChain = nullptr;
 
+        //Create a vertex buffer
+        BufferDescriptor bufferDesc;
+        bufferDesc.size = vertexData.size() * sizeof(float);
+        bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Vertex;
+        bufferDesc.mappedAtCreation = false;
+        Buffer vertexBuffer = device.createBuffer(bufferDesc);
+        // Upload geometry data to the buffer
+        queue.writeBuffer(vertexBuffer, 0, vertexData.data(), bufferDesc.size);
+
         //Set a pipeline for the RenderPass
         RenderPipelineDescriptor pipelineDesc;
-        setVertexDescription(pipelineDesc, shaderModule);
+        VertexBufferLayout vertexBufferLayout;
+        VertexAttribute vertexAttrib;
+        setVertexDescription(pipelineDesc, shaderModule, vertexBufferLayout, vertexAttrib);
         setPrimitiveDescriptor(pipelineDesc);
         FragmentState fragmentState;
         BlendState blendState;
@@ -273,7 +321,9 @@ fn fs_main() -> @location(0) vec4f {
         RenderPipeline pipeline = device.createRenderPipeline(pipelineDesc);
         RenderPassEncoder renderPass = encoder.beginRenderPass(renderPassDesc);
         renderPass.setPipeline(pipeline);
-        renderPass.draw(3,1,0,0);
+        renderPass.setVertexBuffer(0, vertexBuffer, 0, vertexBuffer.getSize());
+        int vertexCount = static_cast<int>(vertexData.size() / 2);
+        renderPass.draw(vertexCount, 1,0, 0);
         renderPass.end();
 
         CommandBufferDescriptor cmdBuffDesc = Default;
