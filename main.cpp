@@ -41,6 +41,45 @@ void setPrimitiveDescriptor(RenderPipelineDescriptor &pipeDesc){
 }
 
 
+void setFragmentDescriptor(RenderPipelineDescriptor &pipeDesc, FragmentState &fragmentState, BlendState &blendState,
+                           ColorTargetState &colorTarget, WGPUTextureFormat swapChainFormat, ShaderModule shaderModule){
+    /////////////////////
+    /////  FRAGMENT  ////
+    /////////////////////
+    fragmentState.module = shaderModule;
+    fragmentState.entryPoint = "fs_main";
+    fragmentState.constantCount = 0;
+    fragmentState.constants = nullptr;
+
+    /////////////////////
+    /////   BLEND   /////
+    /////////////////////
+
+    //As the fragment shader is in charge of colouring the fragments, we should configure the blending (color mixing)
+    //Here we use an alpha blending equation
+    blendState.color.srcFactor = BlendFactor::SrcAlpha;
+    blendState.color.dstFactor = BlendFactor::OneMinusSrcAlpha;
+    blendState.color.operation = BlendOperation::Add;
+    //We set the alpha channel untouched
+    blendState.alpha.srcFactor = BlendFactor::Zero;
+    blendState.alpha.dstFactor = BlendFactor::One;
+    blendState.alpha.operation = BlendOperation::Add;
+
+    /////////////////////
+    //// COLOR TARGET ///
+    /////////////////////
+    //The color target will define the format and behaviour of the color targets this pipeline writes to
+    colorTarget.format = swapChainFormat;
+    colorTarget.blend = &blendState;
+    colorTarget.writeMask = ColorWriteMask::All;
+
+    fragmentState.targetCount = 1;
+    fragmentState.targets = &colorTarget;
+
+    pipeDesc.fragment = &fragmentState;
+}
+
+
 int main() {
     if (!glfwInit()) {  // Initialize GLFW & check for any GLFW error
         std::cout << "Could not initialize GLFW!" << std::endl;
@@ -175,6 +214,7 @@ fn fs_main() -> @location(0) vec4f {
 
     ShaderModule shaderModule = device.createShaderModule(shaderDesc);
 
+
     //Main window loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -214,43 +254,9 @@ fn fs_main() -> @location(0) vec4f {
         setVertexDescription(pipelineDesc, shaderModule);
         setPrimitiveDescriptor(pipelineDesc);
         FragmentState fragmentState;
-
-        /////////////////////
-        /////  FRAGMENT  ////
-        /////////////////////
-        fragmentState.module = shaderModule;
-        fragmentState.entryPoint = "fs_main";
-        fragmentState.constantCount = 0;
-        fragmentState.constants = nullptr;
-
-        /////////////////////
-        /////   BLEND   /////
-        /////////////////////
-
-        //As the fragment shader is in charge of colouring the fragments, we should configure the blending (color mixing)
         BlendState blendState;
-        //Here we use an alpha blending equation
-        blendState.color.srcFactor = BlendFactor::SrcAlpha;
-        blendState.color.dstFactor = BlendFactor::OneMinusSrcAlpha;
-        blendState.color.operation = BlendOperation::Add;
-        //We set the alpha channel untouched
-        blendState.alpha.srcFactor = BlendFactor::Zero;
-        blendState.alpha.dstFactor = BlendFactor::One;
-        blendState.alpha.operation = BlendOperation::Add;
-
-        /////////////////////
-        //// COLOR TARGET ///
-        /////////////////////
-        //The color target will define the format and behaviour of the color targets this pipeline writes to
         ColorTargetState colorTarget;
-        colorTarget.format = swapChainFormat;
-        colorTarget.blend = &blendState;
-        colorTarget.writeMask = ColorWriteMask::All;
-
-        fragmentState.targetCount = 1;
-        fragmentState.targets = &colorTarget;
-
-        pipelineDesc.fragment = &fragmentState;
+        setFragmentDescriptor(pipelineDesc,fragmentState,blendState,colorTarget,swapChainFormat, shaderModule);
 
         //Stencil and depth
         pipelineDesc.depthStencil = nullptr;
