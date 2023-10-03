@@ -13,7 +13,7 @@ int height = 480;
 
 
 void setVertexDescription(RenderPipelineDescriptor &pipeDesc, ShaderModule shaderModule,
-                          VertexBufferLayout &vertexBufferLayout, VertexAttribute &vertexAttrib){
+                          VertexBufferLayout &vertexBufferLayout, std::vector<VertexAttribute>& vertexAttribs){
 
     //The shader source code
     pipeDesc.vertex.module = shaderModule;
@@ -24,17 +24,20 @@ void setVertexDescription(RenderPipelineDescriptor &pipeDesc, ShaderModule shade
     pipeDesc.vertex.constants = nullptr;
 
     // == Per attribute ==
-    // Corresponds to @location(...)
-    vertexAttrib.shaderLocation = 0;
-    // Means vec2f in the shader
-    vertexAttrib.format = VertexFormat::Float32x2;
-    // Index of the first element
-    vertexAttrib.offset = 0;
+    //Position
+    vertexAttribs[0].shaderLocation = 0;  // Corresponds to @location(...)
+    vertexAttribs[0].format = VertexFormat::Float32x2;
+    vertexAttribs[0].offset = 0;
+    //Color
+    vertexAttribs[1].shaderLocation = 1;
+    vertexAttribs[1].format = VertexFormat::Float32x3;
+    vertexAttribs[1].offset = 2 * sizeof(float);
+
     // == Common to attributes from the same buffer ==
-    vertexBufferLayout.arrayStride = 2 * sizeof(float);
     vertexBufferLayout.stepMode = VertexStepMode::Vertex;
-    vertexBufferLayout.attributeCount = 1;
-    vertexBufferLayout.attributes = &vertexAttrib;
+    vertexBufferLayout.attributeCount = static_cast<uint32_t>(vertexAttribs.size());
+    vertexBufferLayout.attributes = vertexAttribs.data();
+    vertexBufferLayout.arrayStride = 5 * sizeof(float);
     //Buffers from the information will be sent
     pipeDesc.vertex.bufferCount = 1;
     pipeDesc.vertex.buffers = &vertexBufferLayout;
@@ -100,14 +103,17 @@ void setFragmentDescriptor(RenderPipelineDescriptor &pipeDesc, FragmentState &fr
 // But in the end this is just a bunch of floats to the eyes of the GPU,
 // the *layout* will tell how to interpret this.
 std::vector<float> vertexData = {
-        // x0, y0
-        -0.5, -0.5,
+        // x0,  y0,  r0,  g0,  b0
+        -0.5, -0.5, 1.0, 0.0, 0.0,
 
-        // x1, y1
-        +0.5, -0.5,
+        // x1,  y1,  r1,  g1,  b1
+        +0.5, -0.5, 0.0, 1.0, 0.0,
 
-        // x2, y2
-        +0.0, +0.5
+        // ...
+        +0.0,   +0.5, 0.0, 0.0, 1.0,
+        -0.55f, -0.5, 1.0, 1.0, 0.0,
+        -0.05f, +0.5, 1.0, 0.0, 1.0,
+        -0.55f, +0.5, 0.0, 1.0, 1.0
 };
 
 
@@ -175,10 +181,11 @@ int main() {
 
     //Now we set the required limits for our application
     RequiredLimits requiredLimits = Default;
-    requiredLimits.limits.maxVertexAttributes = 1;
+    requiredLimits.limits.maxVertexAttributes = 2;
     requiredLimits.limits.maxVertexBuffers = 1;
-    requiredLimits.limits.maxBufferSize = 6 * 2 * sizeof(float);
-    requiredLimits.limits.maxVertexBufferArrayStride = 2 * sizeof(float);
+    requiredLimits.limits.maxInterStageShaderComponents = 3;
+    requiredLimits.limits.maxBufferSize = 6 * 5 * sizeof(float);
+    requiredLimits.limits.maxVertexBufferArrayStride = 5 * sizeof(float);
     requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
     requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
     deviceDesc.requiredLimits = &requiredLimits;
@@ -229,14 +236,36 @@ int main() {
     /////////////////////////////
 
     const char* shaderSource = R"(
+struct VertexInput {
+    @location(0) position: vec2f,
+    @location(1) color: vec3f,
+};
+
+/**
+ * A structure with fields labeled with builtins and locations can also be used
+ * as *output* of the vertex shader, which is also the input of the fragment
+ * shader.
+ */
+struct VertexOutput {
+    @builtin(position) position: vec4f,
+    // The location here does not refer to a vertex attribute, it just means
+    // that this field must be handled by the rasterizer.
+    // (It can also refer to another field of another struct that would be used
+    // as input to the fragment shader.)
+    @location(0) color: vec3f,
+};
+
 @vertex
-fn vs_main(@location(0) in_vertex_position: vec2f) -> @builtin(position) vec4f {
-    return vec4f(in_vertex_position, 0.0, 1.0);
+fn vs_main(in: VertexInput) -> VertexOutput {
+    var out: VertexOutput;
+    out.position = vec4f(in.position, 0.0, 1.0);
+    out.color = in.color; // forward to the fragment shader
+    return out;
 }
 
 @fragment
-fn fs_main() -> @location(0) vec4f {
-    return vec4f(0.0, 0.4, 1.0, 1.0);
+fn fs_main(in: VertexOutput) -> @location(0) vec4f {
+    return vec4f(in.color, 1.0);
 })";
     ShaderModuleDescriptor shaderDesc;
     shaderDesc.hintCount = 0;
@@ -298,8 +327,8 @@ fn fs_main() -> @location(0) vec4f {
         //Set a pipeline for the RenderPass
         RenderPipelineDescriptor pipelineDesc;
         VertexBufferLayout vertexBufferLayout;
-        VertexAttribute vertexAttrib;
-        setVertexDescription(pipelineDesc, shaderModule, vertexBufferLayout, vertexAttrib);
+        std::vector<VertexAttribute> vertexAttribs(2);
+        setVertexDescription(pipelineDesc, shaderModule, vertexBufferLayout, vertexAttribs);
         setPrimitiveDescriptor(pipelineDesc);
         FragmentState fragmentState;
         BlendState blendState;
@@ -322,7 +351,7 @@ fn fs_main() -> @location(0) vec4f {
         RenderPassEncoder renderPass = encoder.beginRenderPass(renderPassDesc);
         renderPass.setPipeline(pipeline);
         renderPass.setVertexBuffer(0, vertexBuffer, 0, vertexBuffer.getSize());
-        int vertexCount = static_cast<int>(vertexData.size() / 2);
+        int vertexCount = static_cast<int>(vertexData.size() / 5);
         renderPass.draw(vertexCount, 1,0, 0);
         renderPass.end();
 
