@@ -103,17 +103,16 @@ void setFragmentDescriptor(RenderPipelineDescriptor &pipeDesc, FragmentState &fr
 // But in the end this is just a bunch of floats to the eyes of the GPU,
 // the *layout* will tell how to interpret this.
 std::vector<float> vertexData = {
-        // x0,  y0,  r0,  g0,  b0
-        -0.5, -0.5, 1.0, 0.0, 0.0,
+        // x,   y,     r,   g,   b
+        -0.5, -0.5,   1.0, 0.0, 0.0,
+        +0.5, -0.5,   0.0, 1.0, 0.0,
+        +0.5, +0.5,   0.0, 0.0, 1.0,
+        -0.5, +0.5,   1.0, 1.0, 0.0
+};
 
-        // x1,  y1,  r1,  g1,  b1
-        +0.5, -0.5, 0.0, 1.0, 0.0,
-
-        // ...
-        +0.0,   +0.5, 0.0, 0.0, 1.0,
-        -0.55f, -0.5, 1.0, 1.0, 0.0,
-        -0.05f, +0.5, 1.0, 0.0, 1.0,
-        -0.55f, +0.5, 0.0, 1.0, 1.0
+std::vector<uint16_t> indexData = {
+        0, 1, 2, // Triangle #0
+        0, 2, 3  // Triangle #1
 };
 
 
@@ -324,6 +323,12 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
         // Upload geometry data to the buffer
         queue.writeBuffer(vertexBuffer, 0, vertexData.data(), bufferDesc.size);
 
+        //Create the index buffer
+        bufferDesc.size = indexData.size() * sizeof(float);
+        bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Index;
+        Buffer indexBuffer = device.createBuffer(bufferDesc);
+        queue.writeBuffer(indexBuffer, 0, indexData.data(), bufferDesc.size);
+
         //Set a pipeline for the RenderPass
         RenderPipelineDescriptor pipelineDesc;
         VertexBufferLayout vertexBufferLayout;
@@ -351,8 +356,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
         RenderPassEncoder renderPass = encoder.beginRenderPass(renderPassDesc);
         renderPass.setPipeline(pipeline);
         renderPass.setVertexBuffer(0, vertexBuffer, 0, vertexBuffer.getSize());
-        int vertexCount = static_cast<int>(vertexData.size() / 5);
-        renderPass.draw(vertexCount, 1,0, 0);
+        renderPass.setIndexBuffer(indexBuffer, IndexFormat::Uint16, 0, indexData.size() * sizeof(uint16_t));
+        int indexCount = static_cast<int>(indexData.size());
+        renderPass.drawIndexed(indexCount, 1, 0, 0,0);
         renderPass.end();
 
         CommandBufferDescriptor cmdBuffDesc = Default;
