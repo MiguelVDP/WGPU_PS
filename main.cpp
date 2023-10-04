@@ -1,15 +1,98 @@
 #include <iostream>
 #include <glfw/glfw3.h>
 #include <glfw3webgpu.h>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 #define WEBGPU_CPP_IMPLEMENTATION
 
 #include "webgpu/webgpu.hpp"
 
 using namespace wgpu;
+namespace fs = std::filesystem;
 
 int width = 640;
 int height = 480;
+
+bool loadGeometry(const fs::path& path, std::vector<float>& pointData, std::vector<uint16_t>& indexData) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        return false;
+    }
+
+    pointData.clear();
+    indexData.clear();
+
+    enum class Section {
+        None,
+        Points,
+        Indices,
+    };
+    Section currentSection = Section::None;
+
+    float value;
+    uint16_t index;
+    std::string line;
+    while (!file.eof()) {
+        getline(file, line);
+
+        // overcome the `CRLF` problem
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+
+        if (line == "[points]") {
+            currentSection = Section::Points;
+        }
+        else if (line == "[indices]") {
+            currentSection = Section::Indices;
+        }
+        else if (line[0] == '#' || line.empty()) {
+            // Do nothing, this is a comment
+        }
+        else if (currentSection == Section::Points) {
+            std::istringstream iss(line);
+            // Get x, y, r, g, b
+            for (int i = 0; i < 5; ++i) {
+                iss >> value;
+                pointData.push_back(value);
+            }
+        }
+        else if (currentSection == Section::Indices) {
+            std::istringstream iss(line);
+            // Get corners #0 #1 and #2
+            for (int i = 0; i < 3; ++i) {
+                iss >> index;
+                indexData.push_back(index);
+            }
+        }
+    }
+    return true;
+}
+
+ShaderModule loadShaderModule(const fs::path& path, Device device) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        return nullptr;
+    }
+    file.seekg(0, std::ios::end);
+    size_t size = file.tellg();
+    std::string shaderSource(size, ' ');
+    file.seekg(0);
+    file.read(shaderSource.data(), size);
+
+    ShaderModuleWGSLDescriptor shaderCodeDesc{};
+    shaderCodeDesc.chain.next = nullptr;
+    shaderCodeDesc.chain.sType = SType::ShaderModuleWGSLDescriptor;
+    shaderCodeDesc.code = shaderSource.c_str();
+    ShaderModuleDescriptor shaderDesc{};
+    shaderDesc.hintCount = 0;
+    shaderDesc.hints = nullptr;
+    shaderDesc.nextInChain = &shaderCodeDesc.chain;
+    return device.createShaderModule(shaderDesc);
+}
 
 
 void setVertexDescription(RenderPipelineDescriptor &pipeDesc, ShaderModule shaderModule,
@@ -98,22 +181,8 @@ void setFragmentDescriptor(RenderPipelineDescriptor &pipeDesc, FragmentState &fr
 }
 
 
-// Vertex buffer
-// There are 2 floats per vertex, one for x and one for y.
-// But in the end this is just a bunch of floats to the eyes of the GPU,
-// the *layout* will tell how to interpret this.
-std::vector<float> vertexData = {
-        // x,   y,     r,   g,   b
-        -0.5, -0.5,   1.0, 0.0, 0.0,
-        +0.5, -0.5,   0.0, 1.0, 0.0,
-        +0.5, +0.5,   0.0, 0.0, 1.0,
-        -0.5, +0.5,   1.0, 1.0, 0.0
-};
-
-std::vector<uint16_t> indexData = {
-        0, 1, 2, // Triangle #0
-        0, 2, 3  // Triangle #1
-};
+std::vector<float> vertexData;
+std::vector<uint16_t> indexData;
 
 
 int main() {
@@ -183,7 +252,7 @@ int main() {
     requiredLimits.limits.maxVertexAttributes = 2;
     requiredLimits.limits.maxVertexBuffers = 1;
     requiredLimits.limits.maxInterStageShaderComponents = 3;
-    requiredLimits.limits.maxBufferSize = 6 * 5 * sizeof(float);
+    requiredLimits.limits.maxBufferSize = 15 * 5 * sizeof(float);
     requiredLimits.limits.maxVertexBufferArrayStride = 5 * sizeof(float);
     requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
     requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
@@ -234,51 +303,16 @@ int main() {
     ////// SHADER CREATION //////
     /////////////////////////////
 
-    const char* shaderSource = R"(
-struct VertexInput {
-    @location(0) position: vec2f,
-    @location(1) color: vec3f,
-};
+    std::cout << "Creating shader module..." << std::endl;
+    ShaderModule shaderModule = loadShaderModule(RESOURCE_DIR "/shader.wgsl", device);
+    std::cout << "Shader module: " << shaderModule << std::endl;
 
-/**
- * A structure with fields labeled with builtins and locations can also be used
- * as *output* of the vertex shader, which is also the input of the fragment
- * shader.
- */
-struct VertexOutput {
-    @builtin(position) position: vec4f,
-    // The location here does not refer to a vertex attribute, it just means
-    // that this field must be handled by the rasterizer.
-    // (It can also refer to another field of another struct that would be used
-    // as input to the fragment shader.)
-    @location(0) color: vec3f,
-};
-
-@vertex
-fn vs_main(in: VertexInput) -> VertexOutput {
-    var out: VertexOutput;
-    out.position = vec4f(in.position, 0.0, 1.0);
-    out.color = in.color; // forward to the fragment shader
-    return out;
-}
-
-@fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4f {
-    return vec4f(in.color, 1.0);
-})";
-    ShaderModuleDescriptor shaderDesc;
-    shaderDesc.hintCount = 0;
-    shaderDesc.hints = nullptr;
-    ShaderModuleWGSLDescriptor shaderCodeDesc;
-    // Set the chained struct's header
-    shaderCodeDesc.chain.next = nullptr;
-    shaderCodeDesc.chain.sType = SType::ShaderModuleWGSLDescriptor;
-    // Connect the chain
-    shaderDesc.nextInChain = &shaderCodeDesc.chain;
-    shaderCodeDesc.code = shaderSource;
-
-    ShaderModule shaderModule = device.createShaderModule(shaderDesc);
-
+    //Read vertex and index from file
+    bool success = loadGeometry(RESOURCE_DIR "/webgpu.txt", vertexData, indexData);
+    if (!success) {
+        std::cerr << "Could not load geometry!" << std::endl;
+        return 1;
+    }
 
     //Main window loop
     while (!glfwWindowShouldClose(window)) {
@@ -306,7 +340,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
         renderPassColorAttachment.resolveTarget = nullptr;
         renderPassColorAttachment.loadOp = WGPULoadOp_Clear;
         renderPassColorAttachment.storeOp = WGPUStoreOp_Store;
-        renderPassColorAttachment.clearValue = WGPUColor{ 0.9, 0.1, 0.2, 1.0 };
+        renderPassColorAttachment.clearValue = WGPUColor{ 0.1, 0.1, 0.1, 1.0 };
         renderPassDesc.colorAttachments = &renderPassColorAttachment;
 
         renderPassDesc.depthStencilAttachment = nullptr;

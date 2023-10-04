@@ -32,3 +32,22 @@ add_subdirectory(glfw3webgpu)
 # so we automatically copy it (it's called WGPU_RUNTIME_LIB in general)
 # next to the binary.
 target_copy_webgpu_binaries(WGPU_PS)
+
+# We add an option to enable different settings when developing the app than
+# when distributing it.
+option(DEV_MODE "Set up development helper settings" ON)
+
+if(DEV_MODE)
+    # In dev mode, we load resources from the source tree, so that when we
+    # dynamically edit resources (like shaders), these are correctly
+    # versionned.
+    target_compile_definitions(WGPU_PS PRIVATE
+            RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources"
+    )
+else()
+    # In release mode, we just load resources relatively to wherever the
+    # executable is launched from, so that the binary is portable
+    target_compile_definitions(WGPU_PS PRIVATE
+            RESOURCE_DIR="./resources"
+    )
+endif()
