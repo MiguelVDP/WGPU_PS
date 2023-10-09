@@ -256,6 +256,9 @@ int main() {
     requiredLimits.limits.maxVertexBufferArrayStride = 5 * sizeof(float);
     requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
     requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
+    requiredLimits.limits.maxBindGroups = 1;
+    requiredLimits.limits.maxUniformBuffersPerShaderStage = 1;
+    requiredLimits.limits.maxUniformBufferBindingSize = 16 * 4;
     deviceDesc.requiredLimits = &requiredLimits;
 
     Device device = adapter.requestDevice(deviceDesc);
@@ -305,7 +308,7 @@ int main() {
 
     std::cout << "Creating shader module..." << std::endl;
     ShaderModule shaderModule = loadShaderModule(RESOURCE_DIR "/shader.wgsl", device);
-    std::cout << "Shader module: " << shaderModule << std::endl;
+    std::cout << "Shader module created: " << shaderModule << std::endl;
 
     //Read vertex and index from file
     bool success = loadGeometry(RESOURCE_DIR "/webgpu.txt", vertexData, indexData);
@@ -348,6 +351,10 @@ int main() {
         renderPassDesc.timestampWrites = nullptr;
         renderPassDesc.nextInChain = nullptr;
 
+        /////////////////////////////
+        ////// BUFFER CREATION //////
+        /////////////////////////////
+
         //Create a vertex buffer
         BufferDescriptor bufferDesc;
         bufferDesc.size = vertexData.size() * sizeof(float);
@@ -363,16 +370,61 @@ int main() {
         Buffer indexBuffer = device.createBuffer(bufferDesc);
         queue.writeBuffer(indexBuffer, 0, indexData.data(), bufferDesc.size);
 
+        //Create the uniform buffer
+        bufferDesc.size = sizeof(float);
+        bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
+        Buffer uniformBuffer = device.createBuffer(bufferDesc);
+        // Update uniform buffer
+        auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
+        queue.writeBuffer(uniformBuffer, 0, &t, sizeof(float));
+
         //Set a pipeline for the RenderPass
         RenderPipelineDescriptor pipelineDesc;
         VertexBufferLayout vertexBufferLayout;
         std::vector<VertexAttribute> vertexAttribs(2);
         setVertexDescription(pipelineDesc, shaderModule, vertexBufferLayout, vertexAttribs);
         setPrimitiveDescriptor(pipelineDesc);
+
         FragmentState fragmentState;
         BlendState blendState;
         ColorTargetState colorTarget;
         setFragmentDescriptor(pipelineDesc,fragmentState,blendState,colorTarget,swapChainFormat, shaderModule);
+
+        // Create binding layout (don't forget to = Default)
+        BindGroupLayoutEntry bindingLayout = Default;
+        bindingLayout.binding = 0;
+        bindingLayout.visibility = ShaderStage::Vertex | ShaderStage::Fragment;
+        bindingLayout.buffer.type = BufferBindingType::Uniform;
+        bindingLayout.buffer.minBindingSize = sizeof(float);
+
+        // Create a bind group layout
+        BindGroupLayoutDescriptor bindGroupLayoutDesc = Default;
+        bindGroupLayoutDesc.entryCount = 1;
+        bindGroupLayoutDesc.entries = &bindingLayout;
+        BindGroupLayout bindGroupLayout = device.createBindGroupLayout(bindGroupLayoutDesc);
+
+        // Create the pipeline layout
+        PipelineLayoutDescriptor layoutDesc = Default;
+        layoutDesc.bindGroupLayoutCount = 1;
+        layoutDesc.bindGroupLayouts = (WGPUBindGroupLayout*)&bindGroupLayout;
+        PipelineLayout layout = device.createPipelineLayout(layoutDesc);
+        pipelineDesc.layout = layout;
+
+        // Create a binding
+        BindGroupEntry binding = Default;
+        binding.binding = 0;
+        binding.buffer = uniformBuffer;
+        binding.offset = 0;
+        binding.size = sizeof(float);
+
+        // A bind group contains one or multiple bindings
+        BindGroupDescriptor bindGroupDesc = Default;
+        bindGroupDesc.layout = bindGroupLayout;
+        // There must be as many bindings as declared in the layout!
+        bindGroupDesc.entryCount = bindGroupLayoutDesc.entryCount;
+        bindGroupDesc.entries = &binding;
+        BindGroup bindGroup = device.createBindGroup(bindGroupDesc);
+
 
         //Stencil and depth
         pipelineDesc.depthStencil = nullptr;
@@ -384,14 +436,13 @@ int main() {
         // Default value as well (irrelevant for count = 1 anyways)
         pipelineDesc.multisample.alphaToCoverageEnabled = false;
 
-        pipelineDesc.layout = nullptr;
-
         RenderPipeline pipeline = device.createRenderPipeline(pipelineDesc);
         RenderPassEncoder renderPass = encoder.beginRenderPass(renderPassDesc);
         renderPass.setPipeline(pipeline);
         renderPass.setVertexBuffer(0, vertexBuffer, 0, vertexBuffer.getSize());
         renderPass.setIndexBuffer(indexBuffer, IndexFormat::Uint16, 0, indexData.size() * sizeof(uint16_t));
         int indexCount = static_cast<int>(indexData.size());
+        renderPass.setBindGroup(0, bindGroup, 0, nullptr);
         renderPass.drawIndexed(indexCount, 1, 0, 0,0);
         renderPass.end();
 
