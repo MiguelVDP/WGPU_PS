@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <pipelineData.h>
 
 #define WEBGPU_CPP_IMPLEMENTATION
 
@@ -378,6 +379,13 @@ int main() {
         auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
         queue.writeBuffer(uniformBuffer, 0, &t, sizeof(float));
 
+        /////////////////////////////
+        ///// PIPELINE CREATION /////
+        /////////////////////////////
+        PipelineData pipelineData;
+        pipelineData.setVertexDescription(shaderModule, 2);
+        pipelineData.setPrimitiveDescriptor();
+        pipelineData.setFragmentDescriptor(swapChainFormat, shaderModule);
         //Set a pipeline for the RenderPass
         RenderPipelineDescriptor pipelineDesc;
         VertexBufferLayout vertexBufferLayout;
@@ -409,6 +417,7 @@ int main() {
         layoutDesc.bindGroupLayouts = (WGPUBindGroupLayout*)&bindGroupLayout;
         PipelineLayout layout = device.createPipelineLayout(layoutDesc);
         pipelineDesc.layout = layout;
+        pipelineData.pipeDesc.layout = layout;
 
         // Create a binding
         BindGroupEntry binding = Default;
@@ -433,10 +442,12 @@ int main() {
         pipelineDesc.multisample.count = 1;
         // Default value for the mask, meaning "all bits on"
         pipelineDesc.multisample.mask = ~0u;
-        // Default value as well (irrelevant for count = 1 anyways)
+        // Default value as well (irrelevant for count = 1 anyway)
         pipelineDesc.multisample.alphaToCoverageEnabled = false;
 
-        RenderPipeline pipeline = device.createRenderPipeline(pipelineDesc);
+        pipelineData.setMisc();
+
+        RenderPipeline pipeline = device.createRenderPipeline(pipelineData.pipeDesc);
         RenderPassEncoder renderPass = encoder.beginRenderPass(renderPassDesc);
         renderPass.setPipeline(pipeline);
         renderPass.setVertexBuffer(0, vertexBuffer, 0, vertexBuffer.getSize());
