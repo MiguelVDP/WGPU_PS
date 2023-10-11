@@ -1,24 +1,21 @@
-#define WEBGPU_CPP_IMPLEMENTATION
-
-#include "webgpu/webgpu.hpp"
+#include <webgpu/webgpu.hpp>
 
 #ifndef WGPU_PS_PIPELINEDATA_H
 #define WGPU_PS_PIPELINEDATA_H
 
-using namespace wgpu;
 class PipelineData{
 public:
-    RenderPipelineDescriptor pipeDesc;
-    VertexBufferLayout vertexBufferLayout;
-    std::vector<VertexAttribute> attributes;
-    FragmentState fragmentState;
-    BlendState blendState;
-    ColorTargetState colorTarget;
+    wgpu::RenderPipelineDescriptor pipeDesc;
+    wgpu::VertexBufferLayout vertexBufferLayout;
+    std::vector<wgpu::VertexAttribute> attributes;
+    wgpu::FragmentState fragmentState;
+    wgpu::BlendState blendState;
+    wgpu::ColorTargetState colorTarget;
 
     PipelineData();
-    void setVertexDescription(ShaderModule shaderModule, int attribCount);
+    void setVertexDescription(wgpu::ShaderModule shaderModule, int attribCount);
     void setPrimitiveDescriptor();
-    void setFragmentDescriptor(WGPUTextureFormat swapChainFormat, ShaderModule shaderModule);
+    void setFragmentDescriptor(WGPUTextureFormat swapChainFormat, wgpu::ShaderModule shaderModule);
     void setMisc();
 };
 

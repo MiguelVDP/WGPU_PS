@@ -6,11 +6,13 @@ set(CMAKE_CXX_STANDARD 17)
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
-add_executable(WGPU_PS main.cpp
+add_executable(WGPU_PS
         #Header files
         include/pipelineData.h
         #Source files
-        src/pipelineData.cpp)
+        main.cpp
+        src/pipelineData.cpp
+        src/implementations.cpp)
 
 target_link_libraries(WGPU_PS PRIVATE glfw webgpu glfw3webgpu)
 

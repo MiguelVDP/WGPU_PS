@@ -5,11 +5,8 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <webgpu/webgpu.hpp>
 #include <pipelineData.h>
-
-#define WEBGPU_CPP_IMPLEMENTATION
-
-#include "webgpu/webgpu.hpp"
 
 using namespace wgpu;
 namespace fs = std::filesystem;
@@ -94,93 +91,6 @@ ShaderModule loadShaderModule(const fs::path& path, Device device) {
     shaderDesc.nextInChain = &shaderCodeDesc.chain;
     return device.createShaderModule(shaderDesc);
 }
-
-
-void setVertexDescription(RenderPipelineDescriptor &pipeDesc, ShaderModule shaderModule,
-                          VertexBufferLayout &vertexBufferLayout, std::vector<VertexAttribute>& vertexAttribs){
-
-    //The shader source code
-    pipeDesc.vertex.module = shaderModule;
-    //The function entry point in the shader
-    pipeDesc.vertex.entryPoint = "vs_main";
-    //Vertex constants
-    pipeDesc.vertex.constantCount = 0;
-    pipeDesc.vertex.constants = nullptr;
-
-    // == Per attribute ==
-    //Position
-    vertexAttribs[0].shaderLocation = 0;  // Corresponds to @location(...)
-    vertexAttribs[0].format = VertexFormat::Float32x2;
-    vertexAttribs[0].offset = 0;
-    //Color
-    vertexAttribs[1].shaderLocation = 1;
-    vertexAttribs[1].format = VertexFormat::Float32x3;
-    vertexAttribs[1].offset = 2 * sizeof(float);
-
-    // == Common to attributes from the same buffer ==
-    vertexBufferLayout.stepMode = VertexStepMode::Vertex;
-    vertexBufferLayout.attributeCount = static_cast<uint32_t>(vertexAttribs.size());
-    vertexBufferLayout.attributes = vertexAttribs.data();
-    vertexBufferLayout.arrayStride = 5 * sizeof(float);
-    //Buffers from the information will be sent
-    pipeDesc.vertex.bufferCount = 1;
-    pipeDesc.vertex.buffers = &vertexBufferLayout;
-}
-
-
-void setPrimitiveDescriptor(RenderPipelineDescriptor &pipeDesc){
-    // Each sequence of 3 vertices is considered as a triangle
-    pipeDesc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
-
-    //Order in which the vertices should be read, if undefined, they will be read sequentially
-    pipeDesc.primitive.stripIndexFormat = IndexFormat::Undefined;
-
-    //Triangle orientation, (CCW = counter clock wise)
-    pipeDesc.primitive.frontFace = WGPUFrontFace_CCW;
-
-    //Set the cull mode (this process avoid painting back faces
-    pipeDesc.primitive.cullMode = CullMode::None;
-}
-
-
-void setFragmentDescriptor(RenderPipelineDescriptor &pipeDesc, FragmentState &fragmentState, BlendState &blendState,
-                           ColorTargetState &colorTarget, WGPUTextureFormat swapChainFormat, ShaderModule shaderModule){
-    /////////////////////
-    /////  FRAGMENT  ////
-    /////////////////////
-    fragmentState.module = shaderModule;
-    fragmentState.entryPoint = "fs_main";
-    fragmentState.constantCount = 0;
-    fragmentState.constants = nullptr;
-
-    /////////////////////
-    /////   BLEND   /////
-    /////////////////////
-
-    //As the fragment shader is in charge of colouring the fragments, we should configure the blending (color mixing)
-    //Here we use an alpha blending equation
-    blendState.color.srcFactor = BlendFactor::SrcAlpha;
-    blendState.color.dstFactor = BlendFactor::OneMinusSrcAlpha;
-    blendState.color.operation = BlendOperation::Add;
-    //We set the alpha channel untouched
-    blendState.alpha.srcFactor = BlendFactor::Zero;
-    blendState.alpha.dstFactor = BlendFactor::One;
-    blendState.alpha.operation = BlendOperation::Add;
-
-    /////////////////////
-    //// COLOR TARGET ///
-    /////////////////////
-    //The color target will define the format and behaviour of the color targets this pipeline writes to
-    colorTarget.format = swapChainFormat;
-    colorTarget.blend = &blendState;
-    colorTarget.writeMask = ColorWriteMask::All;
-
-    fragmentState.targetCount = 1;
-    fragmentState.targets = &colorTarget;
-
-    pipeDesc.fragment = &fragmentState;
-}
-
 
 std::vector<float> vertexData;
 std::vector<uint16_t> indexData;
@@ -386,17 +296,6 @@ int main() {
         pipelineData.setVertexDescription(shaderModule, 2);
         pipelineData.setPrimitiveDescriptor();
         pipelineData.setFragmentDescriptor(swapChainFormat, shaderModule);
-        //Set a pipeline for the RenderPass
-        RenderPipelineDescriptor pipelineDesc;
-        VertexBufferLayout vertexBufferLayout;
-        std::vector<VertexAttribute> vertexAttribs(2);
-        setVertexDescription(pipelineDesc, shaderModule, vertexBufferLayout, vertexAttribs);
-        setPrimitiveDescriptor(pipelineDesc);
-
-        FragmentState fragmentState;
-        BlendState blendState;
-        ColorTargetState colorTarget;
-        setFragmentDescriptor(pipelineDesc,fragmentState,blendState,colorTarget,swapChainFormat, shaderModule);
 
         // Create binding layout (don't forget to = Default)
         BindGroupLayoutEntry bindingLayout = Default;
@@ -416,7 +315,6 @@ int main() {
         layoutDesc.bindGroupLayoutCount = 1;
         layoutDesc.bindGroupLayouts = (WGPUBindGroupLayout*)&bindGroupLayout;
         PipelineLayout layout = device.createPipelineLayout(layoutDesc);
-        pipelineDesc.layout = layout;
         pipelineData.pipeDesc.layout = layout;
 
         // Create a binding
@@ -433,17 +331,6 @@ int main() {
         bindGroupDesc.entryCount = bindGroupLayoutDesc.entryCount;
         bindGroupDesc.entries = &binding;
         BindGroup bindGroup = device.createBindGroup(bindGroupDesc);
-
-
-        //Stencil and depth
-        pipelineDesc.depthStencil = nullptr;
-
-        // Samples per pixel
-        pipelineDesc.multisample.count = 1;
-        // Default value for the mask, meaning "all bits on"
-        pipelineDesc.multisample.mask = ~0u;
-        // Default value as well (irrelevant for count = 1 anyway)
-        pipelineDesc.multisample.alphaToCoverageEnabled = false;
 
         pipelineData.setMisc();
 
