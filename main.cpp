@@ -14,7 +14,7 @@ namespace fs = std::filesystem;
 int width = 640;
 int height = 480;
 
-bool loadGeometry(const fs::path& path, std::vector<float>& pointData, std::vector<uint16_t>& indexData) {
+bool loadGeometry(const fs::path& path, std::vector<float>& pointData, std::vector<uint16_t>& indexData, int dimensions) {
     std::ifstream file(path);
     if (!file.is_open()) {
         return false;
@@ -53,7 +53,7 @@ bool loadGeometry(const fs::path& path, std::vector<float>& pointData, std::vect
         else if (currentSection == Section::Points) {
             std::istringstream iss(line);
             // Get x, y, r, g, b
-            for (int i = 0; i < 5; ++i) {
+            for (int i = 0; i < dimensions + 3; ++i) {
                 iss >> value;
                 pointData.push_back(value);
             }
@@ -164,12 +164,16 @@ int main() {
     requiredLimits.limits.maxVertexBuffers = 1;
     requiredLimits.limits.maxInterStageShaderComponents = 3;
     requiredLimits.limits.maxBufferSize = 15 * 5 * sizeof(float);
-    requiredLimits.limits.maxVertexBufferArrayStride = 5 * sizeof(float);
+    requiredLimits.limits.maxVertexBufferArrayStride = 6 * sizeof(float);
     requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
     requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
     requiredLimits.limits.maxBindGroups = 1;
     requiredLimits.limits.maxUniformBuffersPerShaderStage = 1;
     requiredLimits.limits.maxUniformBufferBindingSize = 16 * 4;
+    // For the depth buffer, we enable textures (up to the size of the window):
+    requiredLimits.limits.maxTextureDimension1D = 480;
+    requiredLimits.limits.maxTextureDimension2D = 640;
+    requiredLimits.limits.maxTextureArrayLayers = 1;
     deviceDesc.requiredLimits = &requiredLimits;
 
     Device device = adapter.requestDevice(deviceDesc);
@@ -222,7 +226,7 @@ int main() {
     std::cout << "Shader module created: " << shaderModule << std::endl;
 
     //Read vertex and index from file
-    bool success = loadGeometry(RESOURCE_DIR "/webgpu.txt", vertexData, indexData);
+    bool success = loadGeometry(RESOURCE_DIR "/pyramid.txt", vertexData, indexData, 3);
     if (!success) {
         std::cerr << "Could not load geometry!" << std::endl;
         return 1;
@@ -297,6 +301,51 @@ int main() {
         pipelineData.setPrimitiveDescriptor();
         pipelineData.setFragmentDescriptor(swapChainFormat, shaderModule);
 
+        /////////////   DEPTH STENCIL STATE /////////////
+        TextureFormat depthTextureFormat = TextureFormat::Depth24Plus;
+        pipelineData.setDepthStencilDescriptor(depthTextureFormat);
+
+        //Now we need to allocate the texture to store de Z-buffer
+        TextureDescriptor depthTextureDesc;
+        depthTextureDesc.dimension = TextureDimension::_2D;
+        depthTextureDesc.format = depthTextureFormat;
+        depthTextureDesc.mipLevelCount = 1;
+        depthTextureDesc.sampleCount = 1;
+        depthTextureDesc.size = {640, 480, 1};
+        depthTextureDesc.usage = TextureUsage::RenderAttachment;
+        depthTextureDesc.viewFormatCount = 1;
+        depthTextureDesc.viewFormats = (WGPUTextureFormat*)&depthTextureFormat;
+        Texture depthTexture = device.createTexture(depthTextureDesc);
+
+        //We need to create a view for the render pipeline to use
+        // Create the view of the depth texture manipulated by the rasterizer
+        TextureViewDescriptor depthTextureViewDesc;
+        depthTextureViewDesc.aspect = TextureAspect::DepthOnly;
+        depthTextureViewDesc.baseArrayLayer = 0;
+        depthTextureViewDesc.arrayLayerCount = 1;
+        depthTextureViewDesc.baseMipLevel = 0;
+        depthTextureViewDesc.mipLevelCount = 1;
+        depthTextureViewDesc.dimension = TextureViewDimension::_2D;
+        depthTextureViewDesc.format = depthTextureFormat;
+        TextureView depthTextureView = depthTexture.createView(depthTextureViewDesc);
+
+        //Now we define an object to connect our depth texture to the render pipeline
+        RenderPassDepthStencilAttachment depthStencilAttachment;
+        //Here we set up clear/store operations
+        depthStencilAttachment.view = depthTextureView;
+        depthStencilAttachment.depthClearValue = 1.0f;
+        depthStencilAttachment.depthLoadOp = LoadOp::Clear;
+        depthStencilAttachment.depthStoreOp = StoreOp::Store;
+        depthStencilAttachment.depthReadOnly = false; //These affects to the Z-buffer globally (not only the texture)
+
+        //We have to set the stencil state too
+        depthStencilAttachment.stencilClearValue = 0;
+        depthStencilAttachment.stencilLoadOp = LoadOp::Clear;
+        depthStencilAttachment.stencilStoreOp = StoreOp::Store;
+        depthStencilAttachment.stencilReadOnly = true;
+
+        renderPassDesc.depthStencilAttachment = &depthStencilAttachment;
+        ////////////////////////////////////////////////////////////
         // Create binding layout (don't forget to = Default)
         BindGroupLayoutEntry bindingLayout = Default;
         bindingLayout.binding = 0;
@@ -351,6 +400,13 @@ int main() {
 
         //Destroy the texture view once used
         nextTexture.release();
+        // Destroy the depth texture and its view
+        depthTextureView.release();
+        depthTexture.destroy();
+        depthTexture.release();
+        uniformBuffer.release();
+        indexBuffer.release();
+        vertexBuffer.release();
 
         ///Swap the textures
         swapChain.present();
@@ -363,5 +419,6 @@ int main() {
     adapter.release();  //Clean un the instance adapter
     surface.release();  //Clean up the WGPU surface
     instance.release(); //Clean up the WGPU instance
+
     return 0;
 }

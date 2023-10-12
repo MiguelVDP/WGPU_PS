@@ -13,18 +13,18 @@ void PipelineData::setVertexDescription(wgpu::ShaderModule shaderModule, int att
     attributes.resize(attribCount);
     //Position
     attributes[0].shaderLocation = 0;  // Corresponds to @location(...)
-    attributes[0].format = wgpu::VertexFormat::Float32x2;
+    attributes[0].format = wgpu::VertexFormat::Float32x3;
     attributes[0].offset = 0;
     //Color
     attributes[1].shaderLocation = 1;
     attributes[1].format = wgpu::VertexFormat::Float32x3;
-    attributes[1].offset = 2 * sizeof(float);
+    attributes[1].offset = 3 * sizeof(float);
 
     // == Common to attributes from the same buffer ==
     vertexBufferLayout.stepMode = wgpu::VertexStepMode::Vertex;
     vertexBufferLayout.attributeCount = static_cast<uint32_t>(attributes.size());
     vertexBufferLayout.attributes = attributes.data();
-    vertexBufferLayout.arrayStride = 5 * sizeof(float);
+    vertexBufferLayout.arrayStride = 6 * sizeof(float);
     //Buffers from the information will be sent
     pipeDesc.vertex.bufferCount = 1;
     pipeDesc.vertex.buffers = &vertexBufferLayout;
@@ -81,15 +81,29 @@ void PipelineData::setFragmentDescriptor(WGPUTextureFormat swapChainFormat, wgpu
     pipeDesc.fragment = &fragmentState;
 }
 
-void PipelineData::setMisc() {
-    pipeDesc.depthStencil = nullptr;
 
+void PipelineData::setMisc() {
     // Samples per pixel
     pipeDesc.multisample.count = 1;
     // Default value for the mask, meaning "all bits on"
     pipeDesc.multisample.mask = ~0u;
     // Default value as well (irrelevant for count = 1 anyway)
     pipeDesc.multisample.alphaToCoverageEnabled = false;
+}
+
+void PipelineData::setDepthStencilDescriptor(wgpu::TextureFormat depthTextureFormat) {
+    depthStencilState = wgpu::Default;
+
+    //Set the depth text
+    depthStencilState.depthCompare = wgpu::CompareFunction::Less;
+    depthStencilState.depthWriteEnabled = true; //Overwrite the z buffer value
+    depthStencilState.format = depthTextureFormat;
+
+    //Set the stencil
+    depthStencilState.stencilReadMask = 0;
+    depthStencilState.stencilWriteMask = 0;
+
+    pipeDesc.depthStencil = &depthStencilState;
 }
 
 PipelineData::PipelineData() = default;

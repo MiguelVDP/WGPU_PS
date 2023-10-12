@@ -11,11 +11,13 @@ public:
     wgpu::FragmentState fragmentState;
     wgpu::BlendState blendState;
     wgpu::ColorTargetState colorTarget;
+    wgpu::DepthStencilState depthStencilState;
 
     PipelineData();
     void setVertexDescription(wgpu::ShaderModule shaderModule, int attribCount);
     void setPrimitiveDescriptor();
     void setFragmentDescriptor(WGPUTextureFormat swapChainFormat, wgpu::ShaderModule shaderModule);
+    void setDepthStencilDescriptor(wgpu::TextureFormat depthTextureFormat);
     void setMisc();
 };
 
