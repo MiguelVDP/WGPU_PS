@@ -36,6 +36,7 @@ endif()
 add_subdirectory(glfw)
 add_subdirectory(WebGPU-distribution-wgpu)
 add_subdirectory(glfw3webgpu)
+target_include_directories(WGPU_PS PRIVATE .)
 
 # The application's binary must find wgpu.dll or libwgpu.so at runtime,
 # so we automatically copy it (it's called WGPU_RUNTIME_LIB in general)

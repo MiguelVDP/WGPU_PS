@@ -7,6 +7,7 @@
 #include <string>
 #include <webgpu/webgpu.hpp>
 #include <pipelineData.h>
+#include <glm/glm.hpp>
 
 using namespace wgpu;
 namespace fs = std::filesystem;

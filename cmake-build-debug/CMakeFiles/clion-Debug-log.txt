@@ -3,5 +3,5 @@ C:\Users\Miguel\AppData\Local\JetBrains\Toolbox\apps\CLion\ch-0\232.9921.42\bin\
 -- Using wgpu-native backend for WebGPU
 -- Using WebGPU runtime from 'C:/WGPU_PS/WebGPU-distribution-wgpu/bin/windows-x86_64/wgpu_native.dll'
 -- Configuring done (0.1s)
--- Generating done (0.1s)
+-- Generating done (0.0s)
 -- Build files have been written to: C:/WGPU_PS/cmake-build-debug

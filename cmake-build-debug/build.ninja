@@ -50,11 +50,29 @@ cmake_ninja_workdir = C$:\WGPU_PS\cmake-build-debug\
 build cmake_object_order_depends_target_WGPU_PS: phony || cmake_object_order_depends_target_glfw cmake_object_order_depends_target_glfw3webgpu
 
 build CMakeFiles\WGPU_PS.dir\main.cpp.obj: CXX_COMPILER__WGPU_PS_unscanned_Debug C$:\WGPU_PS\main.cpp || cmake_object_order_depends_target_WGPU_PS
-  DEFINES = -DWEBGPU_BACKEND_WGPU
+  DEFINES = -DRESOURCE_DIR=\"C:/WGPU_PS/resources\" -DWEBGPU_BACKEND_WGPU
   FLAGS = /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /W4 -WX
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw3webgpu\. -IC:\WGPU_PS\WebGPU-distribution-wgpu\include
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\. -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw3webgpu\. -IC:\WGPU_PS\WebGPU-distribution-wgpu\include
   OBJECT_DIR = CMakeFiles\WGPU_PS.dir
   OBJECT_FILE_DIR = CMakeFiles\WGPU_PS.dir
+  TARGET_COMPILE_PDB = CMakeFiles\WGPU_PS.dir\
+  TARGET_PDB = WGPU_PS.pdb
+
+build CMakeFiles\WGPU_PS.dir\src\pipelineData.cpp.obj: CXX_COMPILER__WGPU_PS_unscanned_Debug C$:\WGPU_PS\src\pipelineData.cpp || cmake_object_order_depends_target_WGPU_PS
+  DEFINES = -DRESOURCE_DIR=\"C:/WGPU_PS/resources\" -DWEBGPU_BACKEND_WGPU
+  FLAGS = /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /W4 -WX
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\. -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw3webgpu\. -IC:\WGPU_PS\WebGPU-distribution-wgpu\include
+  OBJECT_DIR = CMakeFiles\WGPU_PS.dir
+  OBJECT_FILE_DIR = CMakeFiles\WGPU_PS.dir\src
+  TARGET_COMPILE_PDB = CMakeFiles\WGPU_PS.dir\
+  TARGET_PDB = WGPU_PS.pdb
+
+build CMakeFiles\WGPU_PS.dir\src\implementations.cpp.obj: CXX_COMPILER__WGPU_PS_unscanned_Debug C$:\WGPU_PS\src\implementations.cpp || cmake_object_order_depends_target_WGPU_PS
+  DEFINES = -DRESOURCE_DIR=\"C:/WGPU_PS/resources\" -DWEBGPU_BACKEND_WGPU
+  FLAGS = /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /W4 -WX
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\. -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw3webgpu\. -IC:\WGPU_PS\WebGPU-distribution-wgpu\include
+  OBJECT_DIR = CMakeFiles\WGPU_PS.dir
+  OBJECT_FILE_DIR = CMakeFiles\WGPU_PS.dir\src
   TARGET_COMPILE_PDB = CMakeFiles\WGPU_PS.dir\
   TARGET_PDB = WGPU_PS.pdb
 
@@ -66,7 +84,7 @@ build CMakeFiles\WGPU_PS.dir\main.cpp.obj: CXX_COMPILER__WGPU_PS_unscanned_Debug
 #############################################
 # Link the executable WGPU_PS.exe
 
-build WGPU_PS.exe: CXX_EXECUTABLE_LINKER__WGPU_PS_Debug CMakeFiles\WGPU_PS.dir\main.cpp.obj | glfw\src\glfw3.lib glfw3webgpu\glfw3webgpu.lib glfw\src\glfw3.lib C$:\WGPU_PS\WebGPU-distribution-wgpu\bin\windows-x86_64\wgpu_native.dll.lib || glfw3webgpu\glfw3webgpu.lib glfw\src\glfw3.lib
+build WGPU_PS.exe: CXX_EXECUTABLE_LINKER__WGPU_PS_Debug CMakeFiles\WGPU_PS.dir\main.cpp.obj CMakeFiles\WGPU_PS.dir\src\pipelineData.cpp.obj CMakeFiles\WGPU_PS.dir\src\implementations.cpp.obj | glfw\src\glfw3.lib glfw3webgpu\glfw3webgpu.lib glfw\src\glfw3.lib C$:\WGPU_PS\WebGPU-distribution-wgpu\bin\windows-x86_64\wgpu_native.dll.lib || glfw3webgpu\glfw3webgpu.lib glfw\src\glfw3.lib
   FLAGS = /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -MDd
   LINK_FLAGS = /machine:x64 /debug /INCREMENTAL /subsystem:console
   LINK_LIBRARIES = glfw\src\glfw3.lib  glfw3webgpu\glfw3webgpu.lib  glfw\src\glfw3.lib  C:\WGPU_PS\WebGPU-distribution-wgpu\bin\windows-x86_64\wgpu_native.dll.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
@@ -152,7 +170,7 @@ build cmake_object_order_depends_target_glfw: phony || glfw\src\CMakeFiles\glfw.
 build glfw\src\CMakeFiles\glfw.dir\context.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\context.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -161,7 +179,7 @@ build glfw\src\CMakeFiles\glfw.dir\context.c.obj: C_COMPILER__glfw_unscanned_Deb
 build glfw\src\CMakeFiles\glfw.dir\init.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\init.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -170,7 +188,7 @@ build glfw\src\CMakeFiles\glfw.dir\init.c.obj: C_COMPILER__glfw_unscanned_Debug 
 build glfw\src\CMakeFiles\glfw.dir\input.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\input.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -179,7 +197,7 @@ build glfw\src\CMakeFiles\glfw.dir\input.c.obj: C_COMPILER__glfw_unscanned_Debug
 build glfw\src\CMakeFiles\glfw.dir\monitor.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\monitor.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -188,7 +206,7 @@ build glfw\src\CMakeFiles\glfw.dir\monitor.c.obj: C_COMPILER__glfw_unscanned_Deb
 build glfw\src\CMakeFiles\glfw.dir\vulkan.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\vulkan.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -197,7 +215,7 @@ build glfw\src\CMakeFiles\glfw.dir\vulkan.c.obj: C_COMPILER__glfw_unscanned_Debu
 build glfw\src\CMakeFiles\glfw.dir\window.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\window.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -206,7 +224,7 @@ build glfw\src\CMakeFiles\glfw.dir\window.c.obj: C_COMPILER__glfw_unscanned_Debu
 build glfw\src\CMakeFiles\glfw.dir\win32_init.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\win32_init.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -215,7 +233,7 @@ build glfw\src\CMakeFiles\glfw.dir\win32_init.c.obj: C_COMPILER__glfw_unscanned_
 build glfw\src\CMakeFiles\glfw.dir\win32_joystick.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\win32_joystick.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -224,7 +242,7 @@ build glfw\src\CMakeFiles\glfw.dir\win32_joystick.c.obj: C_COMPILER__glfw_unscan
 build glfw\src\CMakeFiles\glfw.dir\win32_monitor.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\win32_monitor.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -233,7 +251,7 @@ build glfw\src\CMakeFiles\glfw.dir\win32_monitor.c.obj: C_COMPILER__glfw_unscann
 build glfw\src\CMakeFiles\glfw.dir\win32_time.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\win32_time.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -242,7 +260,7 @@ build glfw\src\CMakeFiles\glfw.dir\win32_time.c.obj: C_COMPILER__glfw_unscanned_
 build glfw\src\CMakeFiles\glfw.dir\win32_thread.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\win32_thread.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -251,7 +269,7 @@ build glfw\src\CMakeFiles\glfw.dir\win32_thread.c.obj: C_COMPILER__glfw_unscanne
 build glfw\src\CMakeFiles\glfw.dir\win32_window.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\win32_window.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -260,7 +278,7 @@ build glfw\src\CMakeFiles\glfw.dir\win32_window.c.obj: C_COMPILER__glfw_unscanne
 build glfw\src\CMakeFiles\glfw.dir\wgl_context.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\wgl_context.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -269,7 +287,7 @@ build glfw\src\CMakeFiles\glfw.dir\wgl_context.c.obj: C_COMPILER__glfw_unscanned
 build glfw\src\CMakeFiles\glfw.dir\egl_context.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\egl_context.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -278,7 +296,7 @@ build glfw\src\CMakeFiles\glfw.dir\egl_context.c.obj: C_COMPILER__glfw_unscanned
 build glfw\src\CMakeFiles\glfw.dir\osmesa_context.c.obj: C_COMPILER__glfw_unscanned_Debug C$:\WGPU_PS\glfw\src\osmesa_context.c || cmake_object_order_depends_target_glfw
   DEFINES = -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_USE_CONFIG_H -D_UNICODE
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3
-  INCLUDES = -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\glfw\src -IC:\WGPU_PS\cmake-build-debug\glfw\src
   OBJECT_DIR = glfw\src\CMakeFiles\glfw.dir
   OBJECT_FILE_DIR = glfw\src\CMakeFiles\glfw.dir
   TARGET_COMPILE_PDB = glfw\src\CMakeFiles\glfw.dir\glfw.pdb
@@ -378,7 +396,7 @@ build cmake_object_order_depends_target_glfw3webgpu: phony || cmake_object_order
 build glfw3webgpu\CMakeFiles\glfw3webgpu.dir\glfw3webgpu.c.obj: C_COMPILER__glfw3webgpu_unscanned_Debug C$:\WGPU_PS\glfw3webgpu\glfw3webgpu.c || cmake_object_order_depends_target_glfw3webgpu
   DEFINES = -DWEBGPU_BACKEND_WGPU
   FLAGS = /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd
-  INCLUDES = -IC:\WGPU_PS\glfw3webgpu\. -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\WebGPU-distribution-wgpu\include
+  INCLUDES = -IC:\WGPU_PS\include -IC:\WGPU_PS\glfw3webgpu\. -IC:\WGPU_PS\glfw\include -IC:\WGPU_PS\WebGPU-distribution-wgpu\include
   OBJECT_DIR = glfw3webgpu\CMakeFiles\glfw3webgpu.dir
   OBJECT_FILE_DIR = glfw3webgpu\CMakeFiles\glfw3webgpu.dir
   TARGET_COMPILE_PDB = glfw3webgpu\CMakeFiles\glfw3webgpu.dir\glfw3webgpu.pdb
