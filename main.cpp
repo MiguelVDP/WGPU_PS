@@ -425,7 +425,7 @@ int main() {
         binding[0].size = sizeof(float);
 
         binding[1] = Default;
-        binding[1].binding = 0;
+        binding[1].binding = 1;
         binding[1].buffer = mvpBuffer;
         binding[1].offset = 0;
         binding[1].size = sizeof(MyUniforms);
