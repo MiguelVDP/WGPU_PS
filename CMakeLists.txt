@@ -14,7 +14,7 @@ add_executable(WGPU_PS
         src/pipelineData.cpp
         src/implementations.cpp)
 
-target_link_libraries(WGPU_PS PRIVATE glfw webgpu glfw3webgpu)
+target_link_libraries(WGPU_PS PRIVATE glfw webgpu glfw3webgpu glm)
 
 set_target_properties(WGPU_PS PROPERTIES
         CXX_STANDARD 17
@@ -36,6 +36,7 @@ endif()
 add_subdirectory(glfw)
 add_subdirectory(WebGPU-distribution-wgpu)
 add_subdirectory(glfw3webgpu)
+add_subdirectory(glm)
 target_include_directories(WGPU_PS PRIVATE .)
 
 # The application's binary must find wgpu.dll or libwgpu.so at runtime,

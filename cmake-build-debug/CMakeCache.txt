@@ -14,8 +14,11 @@
 # EXTERNAL cache entries
 ########################
 
-//Build shared libraries
+//Build shared library
 BUILD_SHARED_LIBS:BOOL=OFF
+
+//Build static library
+BUILD_STATIC_LIBS:BOOL=ON
 
 //Path to a program.
 CMAKE_AR:FILEPATH=C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29910/bin/Hostx64/x64/lib.exe
@@ -295,6 +298,60 @@ GLFW_USE_HYBRID_HPG:BOOL=OFF
 //Assume the Vulkan loader is linked with the application
 GLFW_VULKAN_STATIC:BOOL=OFF
 
+//Enable language extensions
+GLM_DISABLE_AUTO_DETECTION:BOOL=OFF
+
+//No CMake Message
+GLM_QUIET:BOOL=OFF
+
+//Build unit tests
+GLM_TEST_ENABLE:BOOL=ON
+
+//Enable C++ 11
+GLM_TEST_ENABLE_CXX_11:BOOL=OFF
+
+//Enable C++ 14
+GLM_TEST_ENABLE_CXX_14:BOOL=OFF
+
+//Enable C++ 17
+GLM_TEST_ENABLE_CXX_17:BOOL=OFF
+
+//Enable C++ 20
+GLM_TEST_ENABLE_CXX_20:BOOL=OFF
+
+//Enable C++ 98
+GLM_TEST_ENABLE_CXX_98:BOOL=OFF
+
+//Enable fast math optimizations
+GLM_TEST_ENABLE_FAST_MATH:BOOL=OFF
+
+//Enable language extensions
+GLM_TEST_ENABLE_LANG_EXTENSIONS:BOOL=OFF
+
+//Enable AVX optimizations
+GLM_TEST_ENABLE_SIMD_AVX:BOOL=OFF
+
+//Enable AVX2 optimizations
+GLM_TEST_ENABLE_SIMD_AVX2:BOOL=OFF
+
+//Enable SSE2 optimizations
+GLM_TEST_ENABLE_SIMD_SSE2:BOOL=OFF
+
+//Enable SSE3 optimizations
+GLM_TEST_ENABLE_SIMD_SSE3:BOOL=OFF
+
+//Enable SSE 4.1 optimizations
+GLM_TEST_ENABLE_SIMD_SSE4_1:BOOL=OFF
+
+//Enable SSE 4.2 optimizations
+GLM_TEST_ENABLE_SIMD_SSE4_2:BOOL=OFF
+
+//Enable SSSE3 optimizations
+GLM_TEST_ENABLE_SIMD_SSSE3:BOOL=OFF
+
+//Force 'pure' instructions
+GLM_TEST_FORCE_PURE:BOOL=OFF
+
 //Use MSVC runtime library DLL
 USE_MSVC_RUNTIME_LIBRARY_DLL:BOOL=ON
 
@@ -306,6 +363,15 @@ WGPU_PS_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
 WGPU_PS_SOURCE_DIR:STATIC=C:/WGPU_PS
+
+//Value Computed by CMake
+glm_BINARY_DIR:STATIC=C:/WGPU_PS/cmake-build-debug/glm
+
+//Value Computed by CMake
+glm_IS_TOP_LEVEL:STATIC=OFF
+
+//Value Computed by CMake
+glm_SOURCE_DIR:STATIC=C:/WGPU_PS/glm
 
 //Value Computed by CMake
 webgpu-backend-wgpu_BINARY_DIR:STATIC=C:/WGPU_PS/cmake-build-debug/WebGPU-distribution-wgpu
@@ -445,7 +511,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_MT
 CMAKE_MT-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=5
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=14
 //Platform information initialized
 CMAKE_PLATFORM_INFO_INITIALIZED:INTERNAL=1
 //noop for ranlib
