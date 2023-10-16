@@ -174,9 +174,11 @@ int main() {
     requiredLimits.limits.maxVertexBufferArrayStride = 6 * sizeof(float);
     requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
     requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
-    requiredLimits.limits.maxBindGroups = 1;
     requiredLimits.limits.maxUniformBuffersPerShaderStage = 1;
-    requiredLimits.limits.maxUniformBufferBindingSize = 16 * 4;
+    requiredLimits.limits.maxUniformBufferBindingSize = 16 * 4 * 3;
+    requiredLimits.limits.maxBindingsPerBindGroup = 2;
+    requiredLimits.limits.maxBindGroups = 2;
+    requiredLimits.limits.maxUniformBuffersPerShaderStage = 2;
     // For the depth buffer, we enable textures (up to the size of the window):
     requiredLimits.limits.maxTextureDimension1D = 480;
     requiredLimits.limits.maxTextureDimension2D = 640;
@@ -191,7 +193,7 @@ int main() {
         if (message) std::cout << " " << message;
         std::cout << std::endl;
     };
-    device.setUncapturedErrorCallback(onDeviceError);
+    auto h = device.setUncapturedErrorCallback(onDeviceError);
 
     std::cout << "Device successfully initialized!" << std::endl;
 
@@ -393,13 +395,13 @@ int main() {
         bindingLayout[0].binding = 0;
         bindingLayout[0].visibility = ShaderStage::Vertex;
         bindingLayout[0].buffer.type = BufferBindingType::Uniform;
-        bindingLayout[0].buffer.minBindingSize = 0;
+        bindingLayout[0].buffer.minBindingSize = sizeof(float);
 
         bindingLayout[1] = Default;
         bindingLayout[1].binding = 1;
         bindingLayout[1].visibility = ShaderStage::Vertex | ShaderStage::Fragment;
         bindingLayout[1].buffer.type = BufferBindingType::Uniform;
-        bindingLayout[1].buffer.minBindingSize = 0;
+        bindingLayout[1].buffer.minBindingSize = sizeof(MyUniforms);
 
         // Create a bind group layout
         BindGroupLayoutDescriptor bindGroupLayoutDesc = Default;
