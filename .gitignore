@@ -10,3 +10,4 @@
 *.out
 #builds
 /cmake-build-debug/
+/build/

@@ -1,7 +1,0 @@
-C:/WGPU_PS/build/CMakeFiles/WGPU_PS.dir
-C:/WGPU_PS/build/CMakeFiles/ALL_BUILD.dir
-C:/WGPU_PS/build/CMakeFiles/ZERO_CHECK.dir
-C:/WGPU_PS/build/glfw/CMakeFiles/ALL_BUILD.dir
-C:/WGPU_PS/build/glfw/src/CMakeFiles/update_mappings.dir
-C:/WGPU_PS/build/glfw/src/CMakeFiles/glfw.dir
-C:/WGPU_PS/build/wgpu/CMakeFiles/ALL_BUILD.dir
