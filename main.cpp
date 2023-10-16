@@ -15,6 +15,12 @@ namespace fs = std::filesystem;
 int width = 640;
 int height = 480;
 
+struct MyUniforms {
+    glm::mat4 projectionMatrix;
+    glm::mat4 viewMatrix;
+    glm::mat4 modelMatrix;
+};
+
 bool loadGeometry(const fs::path& path, std::vector<float>& pointData, std::vector<uint16_t>& indexData, int dimensions) {
     std::ifstream file(path);
     if (!file.is_open()) {
@@ -164,7 +170,7 @@ int main() {
     requiredLimits.limits.maxVertexAttributes = 2;
     requiredLimits.limits.maxVertexBuffers = 1;
     requiredLimits.limits.maxInterStageShaderComponents = 3;
-    requiredLimits.limits.maxBufferSize = 15 * 5 * sizeof(float);
+    requiredLimits.limits.maxBufferSize = 16 * 5 * sizeof(float);
     requiredLimits.limits.maxVertexBufferArrayStride = 6 * sizeof(float);
     requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
     requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
@@ -233,6 +239,35 @@ int main() {
         return 1;
     }
 
+    //Manage the uniforms her
+    MyUniforms uniforms;
+    uniforms.projectionMatrix = glm::mat4(0.f);
+
+    float aspectRatio = (float)width / (float)height;
+    float near = 0.01f;
+    float far = 20.f;
+    float fov = glm::radians(60.0f);
+    float top, button, right, left;
+    top = glm::tan(fov / 2) * near;
+    button = -top;
+    right = top * aspectRatio;
+    left = button * aspectRatio;
+
+    uniforms.projectionMatrix[0].x = (2 * near) / (right - left);
+
+    uniforms.projectionMatrix[1].y = (2 * near) / (top - button);
+
+    uniforms.projectionMatrix[2].x = (right + left) / (right - left);
+    uniforms.projectionMatrix[2].y = (top + button) / (top - button);
+    uniforms.projectionMatrix[2].z = -(far + near) / (far - near);
+    uniforms.projectionMatrix[2].w = -1.f;
+
+    uniforms.projectionMatrix[3].z = -(2 * far * near) / (far - near);
+
+    uniforms.modelMatrix = glm::mat4x4(1.0f);
+    uniforms.viewMatrix = glm::mat4x4(1.0f);
+
+
     //Main window loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -294,6 +329,11 @@ int main() {
         auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
         queue.writeBuffer(uniformBuffer, 0, &t, sizeof(float));
 
+        bufferDesc.size = sizeof(MyUniforms);
+        bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
+        Buffer mvpBuffer = device.createBuffer(bufferDesc);
+        queue.writeBuffer(mvpBuffer, 0, &uniforms, sizeof(MyUniforms));
+
         /////////////////////////////
         ///// PIPELINE CREATION /////
         /////////////////////////////
@@ -348,16 +388,23 @@ int main() {
         renderPassDesc.depthStencilAttachment = &depthStencilAttachment;
         ////////////////////////////////////////////////////////////
         // Create binding layout (don't forget to = Default)
-        BindGroupLayoutEntry bindingLayout = Default;
-        bindingLayout.binding = 0;
-        bindingLayout.visibility = ShaderStage::Vertex | ShaderStage::Fragment;
-        bindingLayout.buffer.type = BufferBindingType::Uniform;
-        bindingLayout.buffer.minBindingSize = sizeof(float);
+        std::vector<BindGroupLayoutEntry> bindingLayout(2);
+        bindingLayout[0] = Default;
+        bindingLayout[0].binding = 0;
+        bindingLayout[0].visibility = ShaderStage::Vertex;
+        bindingLayout[0].buffer.type = BufferBindingType::Uniform;
+        bindingLayout[0].buffer.minBindingSize = 0;
+
+        bindingLayout[1] = Default;
+        bindingLayout[1].binding = 1;
+        bindingLayout[1].visibility = ShaderStage::Vertex | ShaderStage::Fragment;
+        bindingLayout[1].buffer.type = BufferBindingType::Uniform;
+        bindingLayout[1].buffer.minBindingSize = 0;
 
         // Create a bind group layout
         BindGroupLayoutDescriptor bindGroupLayoutDesc = Default;
-        bindGroupLayoutDesc.entryCount = 1;
-        bindGroupLayoutDesc.entries = &bindingLayout;
+        bindGroupLayoutDesc.entryCount = 2;
+        bindGroupLayoutDesc.entries = bindingLayout.data();
         BindGroupLayout bindGroupLayout = device.createBindGroupLayout(bindGroupLayoutDesc);
 
         // Create the pipeline layout
@@ -368,18 +415,25 @@ int main() {
         pipelineData.pipeDesc.layout = layout;
 
         // Create a binding
-        BindGroupEntry binding = Default;
-        binding.binding = 0;
-        binding.buffer = uniformBuffer;
-        binding.offset = 0;
-        binding.size = sizeof(float);
+        std::vector<BindGroupEntry> binding(2);
+        binding[0] = Default;
+        binding[0].binding = 0;
+        binding[0].buffer = uniformBuffer;
+        binding[0].offset = 0;
+        binding[0].size = sizeof(float);
+
+        binding[1] = Default;
+        binding[1].binding = 0;
+        binding[1].buffer = mvpBuffer;
+        binding[1].offset = 0;
+        binding[1].size = sizeof(MyUniforms);
 
         // A bind group contains one or multiple bindings
         BindGroupDescriptor bindGroupDesc = Default;
         bindGroupDesc.layout = bindGroupLayout;
         // There must be as many bindings as declared in the layout!
         bindGroupDesc.entryCount = bindGroupLayoutDesc.entryCount;
-        bindGroupDesc.entries = &binding;
+        bindGroupDesc.entries = binding.data();
         BindGroup bindGroup = device.createBindGroup(bindGroupDesc);
 
         pipelineData.setMisc();
@@ -408,6 +462,7 @@ int main() {
         uniformBuffer.release();
         indexBuffer.release();
         vertexBuffer.release();
+        mvpBuffer.release();
 
         ///Swap the textures
         swapChain.present();
