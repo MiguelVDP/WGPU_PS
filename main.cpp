@@ -8,6 +8,7 @@
 #include <webgpu/webgpu.hpp>
 #include <pipelineData.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 using namespace wgpu;
 namespace fs = std::filesystem;
@@ -19,6 +20,7 @@ struct MyUniforms {
     glm::mat4 projectionMatrix;
     glm::mat4 viewMatrix;
     glm::mat4 modelMatrix;
+    glm::mat4 model2Matrix;
 };
 
 bool loadGeometry(const fs::path& path, std::vector<float>& pointData, std::vector<uint16_t>& indexData, int dimensions) {
@@ -99,9 +101,26 @@ ShaderModule loadShaderModule(const fs::path& path, Device device) {
     return device.createShaderModule(shaderDesc);
 }
 
+void transformVertex(MyUniforms &uniforms, float t){
+    float angle = t;
+    glm::mat4  m = glm::mat4(1.0f);
+    m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, -1, 0));
+    m = glm::rotate(m, glm::radians(-90.0f), glm::vec3(t,0,0));
+    m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
+    uniforms.modelMatrix = m;
+}
+
+void transformVertex2(MyUniforms &uniforms, float t){
+    float angle = t;
+    glm::mat4  m = glm::mat4(1.0f);
+    m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0, 0));
+    m = glm::rotate(m, glm::radians(-90.0f), glm::vec3(t,0,0));
+    m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
+    uniforms.model2Matrix = m;
+}
+
 std::vector<float> vertexData;
 std::vector<uint16_t> indexData;
-
 
 int main() {
     if (!glfwInit()) {  // Initialize GLFW & check for any GLFW error
@@ -175,7 +194,7 @@ int main() {
     requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
     requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
     requiredLimits.limits.maxUniformBuffersPerShaderStage = 1;
-    requiredLimits.limits.maxUniformBufferBindingSize = 16 * 4 * 3;
+    requiredLimits.limits.maxUniformBufferBindingSize = sizeof(MyUniforms);
     requiredLimits.limits.maxBindingsPerBindGroup = 2;
     requiredLimits.limits.maxBindGroups = 2;
     requiredLimits.limits.maxUniformBuffersPerShaderStage = 2;
@@ -242,32 +261,20 @@ int main() {
     }
 
     //Manage the uniforms her
-    MyUniforms uniforms;
+    MyUniforms uniforms{};
     uniforms.projectionMatrix = glm::mat4(0.f);
 
     float aspectRatio = (float)width / (float)height;
     float near = 0.01f;
     float far = 20.f;
     float fov = glm::radians(60.0f);
-    float top, button, right, left;
-    top = glm::tan(fov / 2) * near;
-    button = -top;
-    right = top * aspectRatio;
-    left = button * aspectRatio;
 
-    uniforms.projectionMatrix[0].x = (2 * near) / (right - left);
+    uniforms.projectionMatrix = glm::perspective(fov, aspectRatio, near, far);
 
-    uniforms.projectionMatrix[1].y = (2 * near) / (top - button);
-
-    uniforms.projectionMatrix[2].x = (right + left) / (right - left);
-    uniforms.projectionMatrix[2].y = (top + button) / (top - button);
-    uniforms.projectionMatrix[2].z = -(far + near) / (far - near);
-    uniforms.projectionMatrix[2].w = -1.f;
-
-    uniforms.projectionMatrix[3].z = -(2 * far * near) / (far - near);
-
-    uniforms.modelMatrix = glm::mat4x4(1.0f);
+    uniforms.modelMatrix = glm::translate(glm::mat4x4(1.0f), glm::vec3(0, 0, 0));
+    uniforms.modelMatrix = glm::mat4(1.0f);
     uniforms.viewMatrix = glm::mat4x4(1.0f);
+    uniforms.viewMatrix[3].z = -4.f;
 
 
     //Main window loop
@@ -296,7 +303,7 @@ int main() {
         renderPassColorAttachment.resolveTarget = nullptr;
         renderPassColorAttachment.loadOp = WGPULoadOp_Clear;
         renderPassColorAttachment.storeOp = WGPUStoreOp_Store;
-        renderPassColorAttachment.clearValue = WGPUColor{ 0.1, 0.1, 0.1, 1.0 };
+        renderPassColorAttachment.clearValue = WGPUColor{ 0.1, 0.1, 0.1, 0.0 };
         renderPassDesc.colorAttachments = &renderPassColorAttachment;
 
         renderPassDesc.depthStencilAttachment = nullptr;
@@ -334,6 +341,8 @@ int main() {
         bufferDesc.size = sizeof(MyUniforms);
         bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
         Buffer mvpBuffer = device.createBuffer(bufferDesc);
+        transformVertex(uniforms, t);
+        transformVertex2(uniforms, t);
         queue.writeBuffer(mvpBuffer, 0, &uniforms, sizeof(MyUniforms));
 
         /////////////////////////////
@@ -447,7 +456,7 @@ int main() {
         renderPass.setIndexBuffer(indexBuffer, IndexFormat::Uint16, 0, indexData.size() * sizeof(uint16_t));
         int indexCount = static_cast<int>(indexData.size());
         renderPass.setBindGroup(0, bindGroup, 0, nullptr);
-        renderPass.drawIndexed(indexCount, 1, 0, 0,0);
+        renderPass.drawIndexed(indexCount, 2, 0, 0,0);
         renderPass.end();
 
         CommandBufferDescriptor cmdBuffDesc = Default;
