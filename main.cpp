@@ -113,9 +113,12 @@ void transformVertex(MyUniforms &uniforms, float t){
 void transformVertex2(MyUniforms &uniforms, float t){
     float angle = t;
     glm::mat4  m = glm::mat4(1.0f);
-    m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0, 0));
+    m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, -1, 0));
     m = glm::rotate(m, glm::radians(-90.0f), glm::vec3(t,0,0));
     m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
+    m = glm::translate(m, glm::vec3(0.f, -1.5, 0));
+    m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
+
     uniforms.model2Matrix = m;
 }
 
