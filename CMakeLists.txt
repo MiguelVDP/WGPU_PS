@@ -9,6 +9,7 @@ include_directories(
 add_executable(WGPU_PS
         #Header files
         include/pipelineData.h
+        include/tiny_obj_loader.h
         #Source files
         main.cpp
         src/pipelineData.cpp

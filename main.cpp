@@ -3,12 +3,12 @@
 #include <glfw3webgpu.h>
 #include <filesystem>
 #include <fstream>
-#include <sstream>
 #include <string>
 #include <webgpu/webgpu.hpp>
 #include <pipelineData.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <tiny_obj_loader.h>
 
 using namespace wgpu;
 namespace fs = std::filesystem;
@@ -23,59 +23,63 @@ struct MyUniforms {
     glm::mat4 model2Matrix;
 };
 
-bool loadGeometry(const fs::path& path, std::vector<float>& pointData, std::vector<uint16_t>& indexData, int dimensions) {
-    std::ifstream file(path);
-    if (!file.is_open()) {
+struct VertexAttributes {
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec3 color;
+};
+
+
+bool loadGeometryFromObj(const fs::path& path, std::vector<VertexAttributes>& vertexData) {
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+
+    std::string warn;
+    std::string err;
+
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.string().c_str());
+
+    if (!warn.empty()) {
+        std::cout << warn << std::endl;
+    }
+
+    if (!err.empty()) {
+        std::cerr << err << std::endl;
+    }
+
+    if (!ret) {
         return false;
     }
 
-    pointData.clear();
-    indexData.clear();
+    // Filling in vertexData:
+    vertexData.clear();
+    for (const auto& shape : shapes) {
+        size_t offset = vertexData.size();
+        vertexData.resize(offset + shape.mesh.indices.size());
+        for (size_t i = 0; i < shape.mesh.indices.size(); ++i) {
+            const tinyobj::index_t& idx = shape.mesh.indices[i];
 
-    enum class Section {
-        None,
-        Points,
-        Indices,
-    };
-    Section currentSection = Section::None;
+            vertexData[i].position = {
+                    attrib.vertices[3 * idx.vertex_index + 0],
+                    attrib.vertices[3 * idx.vertex_index + 1],
+                    attrib.vertices[3 * idx.vertex_index + 2]
+            };
 
-    float value;
-    uint16_t index;
-    std::string line;
-    while (!file.eof()) {
-        getline(file, line);
+            vertexData[i].normal = {
+                    attrib.normals[3 * idx.normal_index + 0],
+                    attrib.normals[3 * idx.normal_index + 1],
+                    attrib.normals[3 * idx.normal_index + 2]
+            };
 
-        // overcome the `CRLF` problem
-        if (!line.empty() && line.back() == '\r') {
-            line.pop_back();
-        }
-
-        if (line == "[points]") {
-            currentSection = Section::Points;
-        }
-        else if (line == "[indices]") {
-            currentSection = Section::Indices;
-        }
-        else if (line[0] == '#' || line.empty()) {
-            // Do nothing, this is a comment
-        }
-        else if (currentSection == Section::Points) {
-            std::istringstream iss(line);
-            // Get x, y, r, g, b
-            for (int i = 0; i < dimensions + 3; ++i) {
-                iss >> value;
-                pointData.push_back(value);
-            }
-        }
-        else if (currentSection == Section::Indices) {
-            std::istringstream iss(line);
-            // Get corners #0 #1 and #2
-            for (int i = 0; i < 3; ++i) {
-                iss >> index;
-                indexData.push_back(index);
-            }
+            vertexData[i].color = {
+                    attrib.colors[3 * idx.vertex_index + 0],
+                    attrib.colors[3 * idx.vertex_index + 1],
+                    attrib.colors[3 * idx.vertex_index + 2]
+            };
         }
     }
+
     return true;
 }
 
@@ -104,7 +108,7 @@ ShaderModule loadShaderModule(const fs::path& path, Device device) {
 void transformVertex(MyUniforms &uniforms, float t){
     float angle = t;
     glm::mat4  m = glm::mat4(1.0f);
-    m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, -1, 0));
+    m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, -1, -0));
     m = glm::rotate(m, glm::radians(-90.0f), glm::vec3(t,0,0));
     m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
     uniforms.modelMatrix = m;
@@ -122,8 +126,7 @@ void transformVertex2(MyUniforms &uniforms, float t){
     uniforms.model2Matrix = m;
 }
 
-std::vector<float> vertexData;
-std::vector<uint16_t> indexData;
+std::vector<VertexAttributes> vertexData;
 
 int main() {
     if (!glfwInit()) {  // Initialize GLFW & check for any GLFW error
@@ -189,11 +192,11 @@ int main() {
 
     //Now we set the required limits for our application
     RequiredLimits requiredLimits = Default;
-    requiredLimits.limits.maxVertexAttributes = 2;
+    requiredLimits.limits.maxVertexAttributes = 3;
     requiredLimits.limits.maxVertexBuffers = 1;
-    requiredLimits.limits.maxInterStageShaderComponents = 3;
-    requiredLimits.limits.maxBufferSize = 16 * 5 * sizeof(float);
-    requiredLimits.limits.maxVertexBufferArrayStride = 6 * sizeof(float);
+    requiredLimits.limits.maxInterStageShaderComponents = 6;
+    requiredLimits.limits.maxBufferSize = 1000 * sizeof(VertexAttributes);
+    requiredLimits.limits.maxVertexBufferArrayStride = sizeof(VertexAttributes);
     requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
     requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
     requiredLimits.limits.maxUniformBuffersPerShaderStage = 1;
@@ -257,7 +260,7 @@ int main() {
     std::cout << "Shader module created: " << shaderModule << std::endl;
 
     //Read vertex and index from file
-    bool success = loadGeometry(RESOURCE_DIR "/pyramid.txt", vertexData, indexData, 3);
+    bool success = loadGeometryFromObj(RESOURCE_DIR "/pyramid.obj", vertexData);
     if (!success) {
         std::cerr << "Could not load geometry!" << std::endl;
         return 1;
@@ -320,7 +323,7 @@ int main() {
 
         //Create a vertex buffer
         BufferDescriptor bufferDesc;
-        bufferDesc.size = vertexData.size() * sizeof(float);
+        bufferDesc.size = vertexData.size() * sizeof(VertexAttributes);
         bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Vertex;
         bufferDesc.mappedAtCreation = false;
         Buffer vertexBuffer = device.createBuffer(bufferDesc);
@@ -328,10 +331,10 @@ int main() {
         queue.writeBuffer(vertexBuffer, 0, vertexData.data(), bufferDesc.size);
 
         //Create the index buffer
-        bufferDesc.size = indexData.size() * sizeof(float);
-        bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Index;
-        Buffer indexBuffer = device.createBuffer(bufferDesc);
-        queue.writeBuffer(indexBuffer, 0, indexData.data(), bufferDesc.size);
+//        bufferDesc.size = indexData.size() * sizeof(float);
+//        bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Index;
+//        Buffer indexBuffer = device.createBuffer(bufferDesc);
+//        queue.writeBuffer(indexBuffer, 0, indexData.data(), bufferDesc.size);
 
         //Create the uniform buffer
         bufferDesc.size = sizeof(float);
@@ -352,7 +355,7 @@ int main() {
         ///// PIPELINE CREATION /////
         /////////////////////////////
         PipelineData pipelineData;
-        pipelineData.setVertexDescription(shaderModule, 2);
+        pipelineData.setVertexDescription(shaderModule, 3);
         pipelineData.setPrimitiveDescriptor();
         pipelineData.setFragmentDescriptor(swapChainFormat, shaderModule);
 
@@ -455,11 +458,12 @@ int main() {
         RenderPipeline pipeline = device.createRenderPipeline(pipelineData.pipeDesc);
         RenderPassEncoder renderPass = encoder.beginRenderPass(renderPassDesc);
         renderPass.setPipeline(pipeline);
-        renderPass.setVertexBuffer(0, vertexBuffer, 0, vertexBuffer.getSize());
-        renderPass.setIndexBuffer(indexBuffer, IndexFormat::Uint16, 0, indexData.size() * sizeof(uint16_t));
-        int indexCount = static_cast<int>(indexData.size());
+        renderPass.setVertexBuffer(0, vertexBuffer, 0, vertexData.size() * sizeof(VertexAttributes));
+//        renderPass.setIndexBuffer(indexBuffer, IndexFormat::Uint16, 0, indexData.size() * sizeof(uint16_t));
+        int indexCount = static_cast<int>(vertexData.size());
         renderPass.setBindGroup(0, bindGroup, 0, nullptr);
-        renderPass.drawIndexed(indexCount, 2, 0, 0,0);
+//        renderPass.drawIndexed(indexCount, 1, 0, 0,0);
+        renderPass.draw(indexCount,1,0,0);
         renderPass.end();
 
         CommandBufferDescriptor cmdBuffDesc = Default;
@@ -474,7 +478,7 @@ int main() {
         depthTexture.destroy();
         depthTexture.release();
         uniformBuffer.release();
-        indexBuffer.release();
+//        indexBuffer.release();
         vertexBuffer.release();
         mvpBuffer.release();
 
