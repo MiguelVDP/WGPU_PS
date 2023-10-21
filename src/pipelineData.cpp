@@ -15,16 +15,20 @@ void PipelineData::setVertexDescription(wgpu::ShaderModule shaderModule, int att
     attributes[0].shaderLocation = 0;  // Corresponds to @location(...)
     attributes[0].format = wgpu::VertexFormat::Float32x3;
     attributes[0].offset = 0;
-    //Color
+    //Normal
     attributes[1].shaderLocation = 1;
     attributes[1].format = wgpu::VertexFormat::Float32x3;
-    attributes[1].offset = 3 * sizeof(float);
+    attributes[1].offset = 3 * sizeof(float);;
+    //Color
+    attributes[2].shaderLocation = 2;
+    attributes[2].format = wgpu::VertexFormat::Float32x3;
+    attributes[2].offset = 6 * sizeof(float);
 
     // == Common to attributes from the same buffer ==
     vertexBufferLayout.stepMode = wgpu::VertexStepMode::Vertex;
     vertexBufferLayout.attributeCount = static_cast<uint32_t>(attributes.size());
     vertexBufferLayout.attributes = attributes.data();
-    vertexBufferLayout.arrayStride = 6 * sizeof(float);
+    vertexBufferLayout.arrayStride = 9 * sizeof(float);
     //Buffers from the information will be sent
     pipeDesc.vertex.bufferCount = 1;
     pipeDesc.vertex.buffers = &vertexBufferLayout;
