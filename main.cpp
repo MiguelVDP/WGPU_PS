@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <tiny_obj_loader.h>
+#include <structs.h>
 
 using namespace wgpu;
 namespace fs = std::filesystem;
@@ -16,18 +17,7 @@ namespace fs = std::filesystem;
 int width = 640;
 int height = 480;
 
-struct MyUniforms {
-    glm::mat4 projectionMatrix;
-    glm::mat4 viewMatrix;
-    glm::mat4 modelMatrix;
-    glm::mat4 model2Matrix;
-};
 
-struct VertexAttributes {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec3 color;
-};
 
 
 bool loadGeometryFromObj(const fs::path& path, std::vector<VertexAttributes>& vertexData) {
