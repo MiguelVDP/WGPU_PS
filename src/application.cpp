@@ -114,6 +114,12 @@ bool Application::onInit(int width, int height) {
 
     std::cout << "Got the Swap Chain!" << std::endl;
 
+    if (!m_window) {  //Check for errors
+        std::cerr << "Could not open window!" << std::endl;
+        glfwTerminate();
+        return 1;
+    }
+
     return true;
 }
 

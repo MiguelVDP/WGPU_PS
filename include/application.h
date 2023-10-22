@@ -3,6 +3,7 @@
 #include <glfw/glfw3.h>
 #include <glfw3webgpu/glfw3webgpu.h>
 #include <structs.h>
+#include <resourceManager.h>
 
 class Application {
 public:

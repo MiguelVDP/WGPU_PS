@@ -10,6 +10,7 @@ add_executable(WGPU_PS
         #Header files
         include/application.h
         include/pipelineData.h
+        include/resourceManager.h
         include/structs.h
         include/tiny_obj_loader.h
         #Source files
@@ -17,6 +18,7 @@ add_executable(WGPU_PS
         src/application.cpp
         src/pipelineData.cpp
         src/implementations.cpp
+        src/resourceManager.cpp
 )
 
 target_link_libraries(WGPU_PS PRIVATE glfw webgpu glfw3webgpu glm)
