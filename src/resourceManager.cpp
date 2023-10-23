@@ -47,7 +47,7 @@ bool ResourceManager::loadGeometryFromObj(const ResourceManager::path &path, std
         return false;
     }
 
-    // Filling in vertexData:
+    // Filling in m_vertexData:
     vertexData.clear();
     for (const auto& shape : shapes) {
         size_t offset = vertexData.size();

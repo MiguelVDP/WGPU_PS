@@ -14,9 +14,9 @@ public:
     wgpu::DepthStencilState depthStencilState;
 
     PipelineData();
-    void setVertexDescription(wgpu::ShaderModule shaderModule, int attribCount);
+    void setVertexDescription(wgpu::ShaderModule shaderModule);
     void setPrimitiveDescriptor();
-    void setFragmentDescriptor(WGPUTextureFormat swapChainFormat, wgpu::ShaderModule shaderModule);
+    void setFragmentDescriptor(wgpu::TextureFormat swapChainFormat, wgpu::ShaderModule shaderModule);
     void setDepthStencilDescriptor(wgpu::TextureFormat depthTextureFormat);
     void setMisc();
 };

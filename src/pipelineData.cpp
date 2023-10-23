@@ -1,6 +1,6 @@
 #include <pipelineData.h>
 
-void PipelineData::setVertexDescription(wgpu::ShaderModule shaderModule, int attribCount) {
+void PipelineData::setVertexDescription(wgpu::ShaderModule shaderModule) {
     //The shader source code
     pipeDesc.vertex.module = shaderModule;
     //The function entry point in the shader
@@ -10,7 +10,7 @@ void PipelineData::setVertexDescription(wgpu::ShaderModule shaderModule, int att
     pipeDesc.vertex.constants = nullptr;
 
     // == Per attribute ==
-    attributes.resize(attribCount);
+    attributes.resize(3);
     //Position
     attributes[0].shaderLocation = 0;  // Corresponds to @location(...)
     attributes[0].format = wgpu::VertexFormat::Float32x3;
@@ -48,7 +48,7 @@ void PipelineData::setPrimitiveDescriptor() {
     pipeDesc.primitive.cullMode = wgpu::CullMode::None;
 }
 
-void PipelineData::setFragmentDescriptor(WGPUTextureFormat swapChainFormat, wgpu::ShaderModule shaderModule) {
+void PipelineData::setFragmentDescriptor(wgpu::TextureFormat swapChainFormat, wgpu::ShaderModule shaderModule) {
     /////////////////////
     /////  FRAGMENT  ////
     /////////////////////

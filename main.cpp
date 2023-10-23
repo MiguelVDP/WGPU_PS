@@ -42,7 +42,7 @@ bool loadGeometryFromObj(const fs::path& path, std::vector<VertexAttributes>& ve
         return false;
     }
 
-    // Filling in vertexData:
+    // Filling in m_vertexData:
     vertexData.clear();
     for (const auto& shape : shapes) {
         size_t offset = vertexData.size();
@@ -273,6 +273,7 @@ int main() {
     uniforms.viewMatrix[3].z = -4.f;
 
 
+    CommandEncoder encoder = nullptr;
     //Main window loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -287,7 +288,7 @@ int main() {
         ///Draw in the texture
         CommandEncoderDescriptor commandEncoderDesc;
         commandEncoderDesc.setDefault();
-        CommandEncoder encoder = device.createCommandEncoder(commandEncoderDesc);
+        encoder = device.createCommandEncoder(commandEncoderDesc);
 
         //Create the renderPassDescriptor
         RenderPassDescriptor renderPassDesc;
@@ -345,7 +346,7 @@ int main() {
         ///// PIPELINE CREATION /////
         /////////////////////////////
         PipelineData pipelineData;
-        pipelineData.setVertexDescription(shaderModule, 3);
+        pipelineData.setVertexDescription(shaderModule);
         pipelineData.setPrimitiveDescriptor();
         pipelineData.setFragmentDescriptor(swapChainFormat, shaderModule);
 
