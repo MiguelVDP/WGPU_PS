@@ -46,6 +46,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
     let n = normalize(in.normal);
     let lightDirection = vec3f(1.0, -0.3, -0.4);
     let shading = dot(-lightDirection, n);
-    let color = in.color * shading;
+    let ambient = vec3(0.1);
+    var color = max(in.color * shading, vec3(0.0));
+    color += ambient;
     return vec4f(color, 1.0);
 }
