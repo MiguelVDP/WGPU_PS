@@ -9,6 +9,7 @@
 
 class Application {
 public:
+
     // A function called only once at the beginning. Returns false is init failed.
     bool onInit(int width, int height);
 
@@ -18,12 +19,14 @@ public:
     // A function called only once at the very end.
     void onFinish();
 
+    bool isRunning() { return !glfwWindowShouldClose(m_window); }
+
     void set_MVPUniforms(MyUniforms u) { m_mvpUniforms = u; }
 
     //Buffers
-    wgpu::Buffer m_vertexBuffer;
-    wgpu::Buffer m_uTimeBuffer;
-    wgpu::Buffer m_mvpBuffer;
+    wgpu::Buffer m_vertexBuffer = nullptr;
+    wgpu::Buffer m_uTimeBuffer = nullptr;
+    wgpu::Buffer m_mvpBuffer = nullptr;
 
     std::vector<VertexAttributes> m_vertexData;
     int m_idxCount;
@@ -40,8 +43,8 @@ private:
     wgpu::Queue m_queue = nullptr;
     wgpu::SwapChain m_swapChain = nullptr;
     wgpu::ShaderModule m_shaderModule = nullptr;
-    wgpu::TextureFormat m_SwapChainFormat;
-    wgpu::TextureFormat m_depthTextureFormat;
+    wgpu::TextureFormat m_SwapChainFormat = wgpu::TextureFormat::Undefined;
+    wgpu::TextureFormat m_depthTextureFormat = wgpu::TextureFormat::Undefined;
     wgpu::Texture m_depthTexture = nullptr;
     PipelineData m_pipelineData;
     wgpu::RenderPipeline m_renderPipeline = nullptr;

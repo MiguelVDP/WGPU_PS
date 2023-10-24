@@ -31,7 +31,6 @@ bool Application::onInit(int width, int height) {
 
     createPipeline();
 
-    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/pyramid.obj", m_vertexData);
     m_idxCount = static_cast<int>(m_vertexData.size());
 
     if (!m_window) {  //Check for errors
@@ -122,13 +121,8 @@ void Application::onFrame() {
 
     //Destroy the texture view once used
     m_nextTexture.release();
-    m_depthTextureView.release();
-    m_depthTexture.destroy();
-    m_depthTexture.release();
-    m_uTimeBuffer.release();
-    m_vertexBuffer.release();
-    m_mvpBuffer.release();
 
+    m_swapChain.present();
 }
 
 void Application::onFinish() {
@@ -144,6 +138,11 @@ void Application::onFinish() {
     m_adapter.release();  //Clean un the instance adapter
     m_surface.release();  //Clean up the WGPU surface
     m_instance.release(); //Clean up the WGPU instance
+    m_uTimeBuffer.release();
+    m_vertexBuffer.release();
+    m_mvpBuffer.release();
+    m_depthTexture.destroy();
+    m_depthTexture.release();
 }
 
 bool Application::initInstanceAdapter() {
@@ -207,8 +206,8 @@ void Application::initDeviceLimits(int width, int height) {
     requiredLimits.limits.maxBindGroups = 2;
     requiredLimits.limits.maxUniformBuffersPerShaderStage = 2;
     // For the depth buffer, we enable textures (up to the size of the window):
-    requiredLimits.limits.maxTextureDimension1D = width;
-    requiredLimits.limits.maxTextureDimension2D = height;
+    requiredLimits.limits.maxTextureDimension1D = height;
+    requiredLimits.limits.maxTextureDimension2D = width;
     requiredLimits.limits.maxTextureArrayLayers = 1;
     deviceDesc.requiredLimits = &requiredLimits;
 
@@ -335,4 +334,5 @@ void Application::initBuffers() {
     bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
     m_mvpBuffer = m_device.createBuffer(bufferDesc);
 }
+
 
