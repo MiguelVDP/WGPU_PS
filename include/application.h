@@ -6,6 +6,7 @@
 #include <structs.h>
 #include <resourceManager.h>
 #include <pipelineData.h>
+#include <glm/gtc/matrix_transform.hpp>
 
 class Application {
 public:
@@ -22,6 +23,8 @@ public:
     bool isRunning() { return !glfwWindowShouldClose(m_window); }
 
     void set_MVPUniforms(MyUniforms u) { m_mvpUniforms = u; }
+
+    void onResize();
 
     //Buffers
     wgpu::Buffer m_vertexBuffer = nullptr;
@@ -44,8 +47,8 @@ private:
     wgpu::SwapChain m_swapChain = nullptr;
     wgpu::ShaderModule m_shaderModule = nullptr;
     wgpu::TextureFormat m_SwapChainFormat = wgpu::TextureFormat::Undefined;
-    wgpu::TextureFormat m_depthTextureFormat = wgpu::TextureFormat::Undefined;
-    wgpu::Texture m_depthTexture = nullptr;
+    wgpu::TextureFormat m_depthBufferFormat = wgpu::TextureFormat::Undefined;
+    wgpu::Texture m_depthBuffer = nullptr;
     PipelineData m_pipelineData;
     wgpu::RenderPipeline m_renderPipeline = nullptr;
     std::vector<wgpu::BindGroupLayoutEntry> m_bindingLayoutEntries;
@@ -58,15 +61,13 @@ private:
     wgpu::RenderPassEncoder m_renderPass = nullptr;
     wgpu::TextureView m_depthTextureView = nullptr;
 
-    bool initInstanceAdapter();
+    bool initWindowAndDevice(int width, int height);
 
-    void initDeviceLimits(int width, int height);
-
-    void initSwapChain(int width, int height);
+    void initSwapChain();
 
     void createPipeline();
 
-    void createDepthTexture();
+    void initDepthBuffer();
 
     void initBuffers();
 

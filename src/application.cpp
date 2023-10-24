@@ -11,19 +11,13 @@ bool Application::onInit(int width, int height) {
         return false;
     }
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    m_window = glfwCreateWindow(width, height, "WGPU_PS", nullptr, nullptr);  //Create a window
-
-    if (!initInstanceAdapter()) return false;
-
-    initDeviceLimits(width, height);
+    if (!initWindowAndDevice(width, height)) return false;
 
     m_queue = m_device.getQueue();
 
-    initSwapChain(width, height);
+    initSwapChain();
 
-    createDepthTexture();
+    initDepthBuffer();
 
     initBuffers();
 
@@ -87,8 +81,8 @@ void Application::onFrame() {
     depthTextureViewDesc.baseMipLevel = 0;
     depthTextureViewDesc.mipLevelCount = 1;
     depthTextureViewDesc.dimension = TextureViewDimension::_2D;
-    depthTextureViewDesc.format = m_depthTextureFormat;
-    m_depthTextureView = m_depthTexture.createView(depthTextureViewDesc);
+    depthTextureViewDesc.format = m_depthBufferFormat;
+    m_depthTextureView = m_depthBuffer.createView(depthTextureViewDesc);
 
     //Now we define an object to connect our depth texture to the render pipeline
     RenderPassDepthStencilAttachment depthStencilAttachment;
@@ -141,11 +135,21 @@ void Application::onFinish() {
     m_uTimeBuffer.release();
     m_vertexBuffer.release();
     m_mvpBuffer.release();
-    m_depthTexture.destroy();
-    m_depthTexture.release();
+    m_depthBuffer.destroy();
+    m_depthBuffer.release();
 }
 
-bool Application::initInstanceAdapter() {
+bool Application::initWindowAndDevice(int width, int height) {
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    m_window = glfwCreateWindow(width, height, "WGPU_PS", nullptr, nullptr);  //Create a window
+    glfwSetWindowUserPointer(m_window, this);
+    glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* window, int, int){
+        auto that = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
+        if (that != nullptr) that->onResize();
+    });
+
     /////////////////////////////
     //////  WGPU INSTANCE  //////
     /////////////////////////////
@@ -178,10 +182,6 @@ bool Application::initInstanceAdapter() {
 
     std::cout << "Adapter successfully initialized!" << std::endl;
 
-    return true;
-}
-
-void Application::initDeviceLimits(int width, int height) {
     std::cout << "Requesting the device..." << std::endl;
 
     DeviceDescriptor deviceDesc;
@@ -206,8 +206,8 @@ void Application::initDeviceLimits(int width, int height) {
     requiredLimits.limits.maxBindGroups = 2;
     requiredLimits.limits.maxUniformBuffersPerShaderStage = 2;
     // For the depth buffer, we enable textures (up to the size of the window):
-    requiredLimits.limits.maxTextureDimension1D = height;
-    requiredLimits.limits.maxTextureDimension2D = width;
+    requiredLimits.limits.maxTextureDimension1D = 2160;
+    requiredLimits.limits.maxTextureDimension2D = 3840;
     requiredLimits.limits.maxTextureArrayLayers = 1;
     deviceDesc.requiredLimits = &requiredLimits;
 
@@ -222,15 +222,19 @@ void Application::initDeviceLimits(int width, int height) {
     m_errorCallbackHandle = m_device.setUncapturedErrorCallback(onDeviceError);
 
     std::cout << "Device successfully initialized!" << std::endl;
+
+    return true;
 }
 
-void Application::initSwapChain(int width, int height) {
-    std::cout << "Asking the device for a swap chain..." << std::endl;
+void Application::initSwapChain() {
+//    std::cout << "Asking the device for a swap chain..." << std::endl;
 
+    int width, height;
+    glfwGetFramebufferSize(m_window, &width, &height);
     //We need to tell the swap chain some of the characteristics of the textures we will be using
     SwapChainDescriptor swapChainDesc;
-    swapChainDesc.height = height;
-    swapChainDesc.width = width;
+    swapChainDesc.height = static_cast<uint32_t>(height);
+    swapChainDesc.width = static_cast<uint32_t>(width);
     m_SwapChainFormat = m_surface.getPreferredFormat(m_adapter);
     swapChainDesc.format = m_SwapChainFormat;
     swapChainDesc.usage = WGPUTextureUsage_RenderAttachment;
@@ -238,7 +242,7 @@ void Application::initSwapChain(int width, int height) {
 
     m_swapChain = m_device.createSwapChain(m_surface, swapChainDesc);
 
-    std::cout << "Got the Swap Chain!" << std::endl;
+//    std::cout << "Got the Swap Chain!" << std::endl;
 }
 
 void Application::createPipeline() {
@@ -250,21 +254,24 @@ void Application::createPipeline() {
     m_renderPipeline = m_device.createRenderPipeline(m_pipelineData.pipeDesc);
 }
 
-void Application::createDepthTexture() {
-    m_depthTextureFormat = TextureFormat::Depth24Plus;
-    m_pipelineData.setDepthStencilDescriptor(m_depthTextureFormat);
+void Application::initDepthBuffer() {
+    int width, height;
+    glfwGetFramebufferSize(m_window, &width, &height);
+
+    m_depthBufferFormat = TextureFormat::Depth24Plus;
+    m_pipelineData.setDepthStencilDescriptor(m_depthBufferFormat);
 
     //Now we need to allocate the texture to store de Z-buffer
     TextureDescriptor depthTextureDesc;
     depthTextureDesc.dimension = TextureDimension::_2D;
-    depthTextureDesc.format = m_depthTextureFormat;
+    depthTextureDesc.format = m_depthBufferFormat;
     depthTextureDesc.mipLevelCount = 1;
     depthTextureDesc.sampleCount = 1;
-    depthTextureDesc.size = {640, 480, 1};
+    depthTextureDesc.size = {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1};
     depthTextureDesc.usage = TextureUsage::RenderAttachment;
     depthTextureDesc.viewFormatCount = 1;
-    depthTextureDesc.viewFormats = (WGPUTextureFormat*)&m_depthTextureFormat;
-    m_depthTexture = m_device.createTexture(depthTextureDesc);
+    depthTextureDesc.viewFormats = (WGPUTextureFormat*)&m_depthBufferFormat;
+    m_depthBuffer = m_device.createTexture(depthTextureDesc);
 
 }
 
@@ -333,6 +340,22 @@ void Application::initBuffers() {
     bufferDesc.size = sizeof(MyUniforms);
     bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
     m_mvpBuffer = m_device.createBuffer(bufferDesc);
+}
+
+void Application::onResize() {
+    initSwapChain();
+    initDepthBuffer();
+    int width, height;
+    glfwGetFramebufferSize(m_window, &width, &height);
+    std::cout<< "Width: " << width << "    Height: " << height << std::endl;
+    float ratio = (float)width / (float)height;
+    m_mvpUniforms.projectionMatrix = glm::perspective(glm::radians(60.0f), ratio, 0.01f, 100.0f);
+    m_queue.writeBuffer(
+            m_mvpBuffer,
+            offsetof(MyUniforms, projectionMatrix),
+            &m_mvpUniforms.projectionMatrix,
+            sizeof(MyUniforms::projectionMatrix)
+    );
 }
 
 
