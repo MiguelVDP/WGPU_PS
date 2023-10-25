@@ -11,8 +11,10 @@
 class Application {
 public:
 
-    // A function called only once at the beginning. Returns false is init failed.
-    bool onInit(int width, int height);
+    Application();
+
+// A function called only once at the beginning. Returns false is init failed.
+    bool onInit(bool fullScreen);
 
     // A function called at each frame, guaranteed never to be called before `onInit`.
     void onFrame();
@@ -22,8 +24,6 @@ public:
 
     bool isRunning() { return !glfwWindowShouldClose(m_window); }
 
-    void set_MVPUniforms(MyUniforms u) { m_mvpUniforms = u; }
-
     void onResize();
 
     //Buffers
@@ -32,8 +32,10 @@ public:
     wgpu::Buffer m_mvpBuffer = nullptr;
 
     std::vector<VertexAttributes> m_vertexData;
-    int m_idxCount;
-    MyUniforms m_mvpUniforms;
+    int m_idxCount{};
+    MyUniforms m_mvpUniforms{};
+    float deltaTime = 0;
+    float lastFrameT = 0;
 
 private:
     // Everything that is initialized in `onInit` and needed in `onFrame`.
@@ -61,6 +63,15 @@ private:
     wgpu::RenderPassEncoder m_renderPass = nullptr;
     wgpu::TextureView m_depthTextureView = nullptr;
 
+    //Camera view variables
+    float lastX = 0;
+    float lastY = 0;
+    float sensitivity = 0.1f;
+    float yaw = -90.f;
+    float pitch = 0;
+    float camSpeed = 10.f;
+    CameraState m_camState{};
+
     bool initWindowAndDevice(int width, int height);
 
     void initSwapChain();
@@ -72,4 +83,8 @@ private:
     void initBuffers();
 
     void initBindings();
+
+    void onMouseMove(double x, double y);
+
+    void onKeyPressed(int key, int action);
 };

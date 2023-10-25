@@ -13,3 +13,9 @@ struct VertexAttributes {
     glm::vec3 normal;
     glm::vec3 color;
 };
+
+struct CameraState{
+    glm::vec3 pos;
+    glm::vec3 front;
+    glm::vec3 up;
+};

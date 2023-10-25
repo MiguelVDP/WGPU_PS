@@ -11,7 +11,7 @@ namespace fs = std::filesystem;
 void transformVertex(Application &app, float t){
     float angle = t;
     glm::mat4  m = glm::mat4(1.0f);
-    m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, -1, -0));
+    m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0, -5));
     m = glm::rotate(m, glm::radians(-90.0f), glm::vec3(t,0,0));
     m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
     app.m_mvpUniforms.modelMatrix = m;
@@ -34,7 +34,7 @@ int main() {
     Application app;
 
     ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/pyramid.obj", app.m_vertexData);
-    app.onInit(640, 480);
+    app.onInit(false);
 
     MyUniforms uniforms{};
     uniforms.projectionMatrix = glm::mat4(0.f);
@@ -44,18 +44,14 @@ int main() {
     float far = 100.f;
     float fov = glm::radians(60.0f);
 
-    uniforms.projectionMatrix = glm::perspective(fov, ratio, near, far);
-
-    uniforms.modelMatrix = glm::mat4(1.0f);
-    uniforms.model2Matrix = glm::mat4(1.0f);
-    uniforms.viewMatrix = glm::mat4x4(1.0f);
-    uniforms.viewMatrix[3].z = -4.f;
-    app.set_MVPUniforms(uniforms);
+    app.m_mvpUniforms.projectionMatrix = glm::perspective(fov, ratio, near, far);
+    app.m_mvpUniforms.modelMatrix = glm::mat4(1.0f);
+    app.m_mvpUniforms.model2Matrix = glm::mat4(1.0f);
 
     while(app.isRunning()){
         auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
         transformVertex(app, t);
-        transformVertex2(app, t);
+//        transformVertex2(app, t);
         app.onFrame();
     }
 

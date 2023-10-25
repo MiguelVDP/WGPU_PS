@@ -5,13 +5,20 @@
 
 using namespace wgpu;
 
-bool Application::onInit(int width, int height) {
+bool Application::onInit(bool fullScreen) {
     if (!glfwInit()) {  // Initialize GLFW & check for any GLFW error
         std::cout << "Could not initialize GLFW!" << std::endl;
         return false;
     }
 
-    if (!initWindowAndDevice(width, height)) return false;
+    if(fullScreen){
+        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+        if (!initWindowAndDevice(mode->width, mode->height)) return false;
+    }else{
+        if (!initWindowAndDevice(640, 480)) return false;
+    }
+
 
     m_queue = m_device.getQueue();
 
@@ -37,6 +44,9 @@ bool Application::onInit(int width, int height) {
 }
 
 void Application::onFrame() {
+    auto currentFrameT = (float)glfwGetTime();
+    deltaTime = currentFrameT - lastFrameT;
+    lastFrameT = currentFrameT;
 
     glfwPollEvents();
     m_nextTexture = m_swapChain.getCurrentTextureView();
@@ -140,15 +150,29 @@ void Application::onFinish() {
 }
 
 bool Application::initWindowAndDevice(int width, int height) {
-
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     m_window = glfwCreateWindow(width, height, "WGPU_PS", nullptr, nullptr);  //Create a window
+
+    double x,y;
+    glfwGetCursorPos(m_window, &x, &y);
+    lastX = (float)x; lastY = (float)y;
+
+    glfwSetInputMode(m_window,GLFW_CURSOR ,GLFW_CURSOR_DISABLED);
     glfwSetWindowUserPointer(m_window, this);
     glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* window, int, int){
         auto that = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
         if (that != nullptr) that->onResize();
     });
+    glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double xPos, double yPos){
+        auto that = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
+        if (that != nullptr) that->onMouseMove(xPos, yPos);
+    });
+    glfwSetKeyCallback(m_window, [](GLFWwindow* window, int key, int , int action, int ){
+        auto that = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
+        if (that != nullptr) that->onKeyPressed(key, action);
+    });
+
 
     /////////////////////////////
     //////  WGPU INSTANCE  //////
@@ -347,15 +371,54 @@ void Application::onResize() {
     initDepthBuffer();
     int width, height;
     glfwGetFramebufferSize(m_window, &width, &height);
-    std::cout<< "Width: " << width << "    Height: " << height << std::endl;
+//    std::cout<< "Width: " << width << "    Height: " << height << std::endl;
     float ratio = (float)width / (float)height;
     m_mvpUniforms.projectionMatrix = glm::perspective(glm::radians(60.0f), ratio, 0.01f, 100.0f);
-    m_queue.writeBuffer(
-            m_mvpBuffer,
-            offsetof(MyUniforms, projectionMatrix),
-            &m_mvpUniforms.projectionMatrix,
-            sizeof(MyUniforms::projectionMatrix)
-    );
+}
+
+void Application::onMouseMove(double x, double y) {
+
+    float xOffset = ((float)x - lastX) * sensitivity;
+    float yOffset = (lastY - (float)y) * sensitivity; //Reversed because y coordinates go from button to top
+    lastX = (float)x;
+    lastY = (float)y;
+
+    yaw += xOffset;
+    pitch += yOffset;
+
+    if(pitch > 89.0f) pitch = 89.0f;
+    if(pitch < -89.0f) pitch = -89.0f;
+
+    glm::vec3 front;
+    front.x = cos(glm::radians(yaw) * cos(glm::radians(pitch)));
+    front.y = sin(glm::radians(pitch));
+    front.z = sin(glm::radians(yaw) * cos(glm::radians(pitch)));
+    m_camState.front = glm::normalize(m_camState.pos + front);
+
+    m_mvpUniforms.viewMatrix = glm::lookAt(m_camState.pos, m_camState.front, m_camState.up);
+
+//    std::cout << "X: " << x << "   Y: " << y << std::endl;
+
+}
+
+void Application::onKeyPressed(int key, int action) {
+
+    if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) glfwSetWindowShouldClose(m_window, true);
+
+//    float cameraSpeed = camSpeed * deltaTime;
+//    if(key == GLFW_KEY_W) m_camState.pos += m_camState.front * cameraSpeed;
+//    if(key == GLFW_KEY_S) m_camState.pos -= m_camState.front * cameraSpeed;
+//    if(key == GLFW_KEY_D) m_camState.pos += glm::normalize(glm::cross(m_camState.front, m_camState.up)) * cameraSpeed;
+//    if(key == GLFW_KEY_A) m_camState.pos -= glm::normalize(glm::cross(m_camState.front, m_camState.up)) * cameraSpeed;
+//
+//    m_mvpUniforms.viewMatrix = glm::lookAt(m_camState.pos, m_camState.front, m_camState.up);
+}
+
+Application::Application() {
+    m_camState.pos = glm::vec3(0.f);
+    m_camState.front = glm::vec3(0.f, 0.f, -1.f);
+    m_camState.up = glm::vec3 (0.f, 1.f, 0.f);
+    m_mvpUniforms.viewMatrix = glm::lookAt(m_camState.pos, m_camState.front, m_camState.up);
 }
 
 
