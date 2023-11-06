@@ -25,7 +25,7 @@ target_link_libraries(WGPU_PS PRIVATE glfw webgpu glfw3webgpu glm)
 
 set_target_properties(WGPU_PS PROPERTIES
         CXX_STANDARD 17
-        COMPILE_WARNING_AS_ERROR ON
+        COMPILE_WARNING_AS_ERROR OFF
         )
 
 if (MSVC)

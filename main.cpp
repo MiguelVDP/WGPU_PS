@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <structs.h>
 #include <application.h>
+#include <Eigen/Dense>
 
 using namespace wgpu;
 namespace fs = std::filesystem;
