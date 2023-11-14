@@ -28,10 +28,11 @@ public:
 
     //Buffers
     wgpu::Buffer m_vertexBuffer = nullptr;
+    wgpu::Buffer m_normalBuffer = nullptr;
     wgpu::Buffer m_uTimeBuffer = nullptr;
     wgpu::Buffer m_mvpBuffer = nullptr;
 
-    std::vector<VertexAttributes> m_vertexData;
+    std::vector<Object> m_vertexData;
     int m_idxCount{};
     MyUniforms m_mvpUniforms{};
     float deltaTime = 0;

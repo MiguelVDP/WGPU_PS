@@ -6,7 +6,7 @@
 class PipelineData{
 public:
     wgpu::RenderPipelineDescriptor pipeDesc;
-    wgpu::VertexBufferLayout vertexBufferLayout;
+    std::vector<wgpu::VertexBufferLayout> vertexBufferLayouts;
     std::vector<wgpu::VertexAttribute> attributes;
     wgpu::FragmentState fragmentState;
     wgpu::BlendState blendState;

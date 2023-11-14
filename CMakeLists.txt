@@ -9,6 +9,7 @@ include_directories(
 add_executable(WGPU_PS
         #Header files
         include/application.h
+        include/object.h
         include/pipelineData.h
         include/resourceManager.h
         include/structs.h
@@ -25,7 +26,7 @@ target_link_libraries(WGPU_PS PRIVATE glfw webgpu glfw3webgpu glm)
 
 set_target_properties(WGPU_PS PROPERTIES
         CXX_STANDARD 17
-        COMPILE_WARNING_AS_ERROR OFF
+        COMPILE_WARNING_AS_ERROR ON
         )
 
 if (MSVC)

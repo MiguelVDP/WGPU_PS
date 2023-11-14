@@ -14,7 +14,6 @@ struct mvpUniforms{
 struct VertexInput {
     @location(0) position: vec3f,
     @location(1) normal: vec3f,
-    @location(2) color: vec3f,
 };
 
 struct VertexOutput {
@@ -37,7 +36,7 @@ fn vs_main(@builtin(instance_index) instanceIdx : u32, in: VertexInput) -> Verte
         out.normal = (uMVP.modelMat * vec4f(in.normal, 0.0)).xyz;
     }
 
-    out.color = in.color; // forward to the fragment shader
+    out.color = vec3(0.8, 0.3, 0.6); // forward to the fragment shader
     return out;
 }
 
