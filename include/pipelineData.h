@@ -1,3 +1,5 @@
+#pragma once
+
 #include <webgpu/webgpu.hpp>
 
 #ifndef WGPU_PS_PIPELINEDATA_H

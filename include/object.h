@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Eigen/Dense>
 
 using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;

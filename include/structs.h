@@ -8,14 +8,15 @@ struct MyUniforms {
     glm::mat4 model2Matrix;
 };
 
-struct VertexAttributes {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec3 color;
-};
-
 struct CameraState{
     glm::vec3 pos;
     glm::vec3 front;
     glm::vec3 up;
+};
+
+enum Integration
+{
+    Explicit = 0,
+    Symplectic = 1,
+    Implicit = 2,
 };

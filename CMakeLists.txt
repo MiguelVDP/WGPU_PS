@@ -10,13 +10,16 @@ add_executable(WGPU_PS
         #Header files
         include/application.h
         include/object.h
+        include/physicmanager.h
         include/pipelineData.h
         include/resourceManager.h
+        include/simulable.h
         include/structs.h
         include/tiny_obj_loader.h
         #Source files
         main.cpp
         src/application.cpp
+        src/physicmanager.cpp
         src/pipelineData.cpp
         src/implementations.cpp
         src/resourceManager.cpp

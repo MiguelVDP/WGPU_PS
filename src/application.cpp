@@ -1,6 +1,4 @@
-//
-// Created by Miguel on 21/10/2023.
-//
+#pragma once
 #include "application.h"
 
 using namespace wgpu;
@@ -164,7 +162,7 @@ bool Application::initWindowAndDevice(int width, int height) {
     lastX = (float) x;
     lastY = (float) y;
 
-//    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetWindowUserPointer(m_window, this);
     glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow *window, int, int) {
         auto that = reinterpret_cast<Application *>(glfwGetWindowUserPointer(window));
@@ -227,7 +225,7 @@ bool Application::initWindowAndDevice(int width, int height) {
     requiredLimits.limits.maxVertexBuffers = 2;
     requiredLimits.limits.maxInterStageShaderComponents = 6;
     requiredLimits.limits.maxBufferSize = 10000 * sizeof(double );
-    requiredLimits.limits.maxVertexBufferArrayStride = sizeof(VertexAttributes);
+    requiredLimits.limits.maxVertexBufferArrayStride = sizeof(Object);
     requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
     requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
     requiredLimits.limits.maxUniformBuffersPerShaderStage = 1;
