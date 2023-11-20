@@ -1,4 +1,6 @@
-#pragma  once
+#ifndef STRUCTS_H
+#define STRUCTS_H
+
 #include <glm/glm.hpp>
 
 struct MyUniforms {
@@ -14,9 +16,4 @@ struct CameraState{
     glm::vec3 up;
 };
 
-enum Integration
-{
-    Explicit = 0,
-    Symplectic = 1,
-    Implicit = 2,
-};
+#endif

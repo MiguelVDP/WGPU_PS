@@ -34,7 +34,7 @@ void transformVertex2(Application &app, float t){
 int main() {
     Application app;
 
-    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/pyramid.obj", app.m_vertexData);
+    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/plano.obj", app.m_vertexData);
     app.onInit(false);
 
     MyUniforms uniforms{};

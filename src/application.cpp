@@ -1,10 +1,9 @@
-#pragma once
 #include "application.h"
 
 using namespace wgpu;
 
 bool Application::onInit(bool fullScreen) {
-    if (!glfwInit()) {  // Initialize GLFW & check for any GLFW error
+    if (!glfwInit()) {  // initialize GLFW & check for any GLFW error
         std::cout << "Could not initialize GLFW!" << std::endl;
         return false;
     }

@@ -1,9 +1,7 @@
-#pragma once
+#ifndef PIPELINE_DATA_H
+#define PIPELINE_DATA_H
 
 #include <webgpu/webgpu.hpp>
-
-#ifndef WGPU_PS_PIPELINEDATA_H
-#define WGPU_PS_PIPELINEDATA_H
 
 class PipelineData{
 public:
@@ -24,4 +22,4 @@ public:
 };
 
 
-#endif //WGPU_PS_PIPELINEDATA_H
+#endif

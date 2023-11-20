@@ -1,4 +1,5 @@
-#pragma once
+#ifndef OBJECT_H
+#define OBJECT_H
 
 #include <Eigen/Dense>
 
@@ -21,3 +22,5 @@ public:
     VectorXR renderNormals;
     Vectori faces;
 };
+
+#endif

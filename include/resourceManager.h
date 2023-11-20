@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RESOURCE_MANAGER_H
+#define RESOURCE_MANAGER_H
 
 #include <structs.h>
 #include <object.h>
@@ -22,3 +23,5 @@ public:
 
     static bool loadGeometryFromObj(const path& path, std::vector<Object>& objectData);
 };
+
+#endif

@@ -869,28 +869,28 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
       m_storage.data()[0] = Scalar(val0);
     }
 
-    // Initialize a fixed size matrix from a pointer to raw data
+    // initialize a fixed size matrix from a pointer to raw data
     template<typename T>
     EIGEN_DEVICE_FUNC
     EIGEN_STRONG_INLINE void _init1(const Scalar* data){
       this->_set_noalias(ConstMapType(data));
     }
 
-    // Initialize an arbitrary matrix from a dense expression
+    // initialize an arbitrary matrix from a dense expression
     template<typename T, typename OtherDerived>
     EIGEN_DEVICE_FUNC
     EIGEN_STRONG_INLINE void _init1(const DenseBase<OtherDerived>& other){
       this->_set_noalias(other);
     }
 
-    // Initialize an arbitrary matrix from an object convertible to the Derived type.
+    // initialize an arbitrary matrix from an object convertible to the Derived type.
     template<typename T>
     EIGEN_DEVICE_FUNC
     EIGEN_STRONG_INLINE void _init1(const Derived& other){
       this->_set_noalias(other);
     }
 
-    // Initialize an arbitrary matrix from a generic Eigen expression
+    // initialize an arbitrary matrix from a generic Eigen expression
     template<typename T, typename OtherDerived>
     EIGEN_DEVICE_FUNC
     EIGEN_STRONG_INLINE void _init1(const EigenBase<OtherDerived>& other){

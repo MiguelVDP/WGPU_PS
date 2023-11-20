@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SIMULABLE_H
+#define SIMULABLE_H
 
 #include <physicmanager.h>
 #include <Eigen/Dense>
@@ -7,10 +8,12 @@
 using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
 using MatrixXR = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>;
 
+class PhysicManager;
+
 class Simulable{
 public:
     /// <summary>
-    /// Initialize the simulable.
+    /// initialize the simulable.
     /// </summary>
     virtual void Initialize(int i, PhysicManager manager) = 0;
 
@@ -52,10 +55,12 @@ public:
     /// <summary>
     /// Write mass values into the mass matrix.
     /// </summary>
-    virtual void GetMass(MatrixXR mass) = 0;
+    virtual void getMass(MatrixXR mass) = 0;
 
     /// <summary>
     /// Write inverse of mass values into the inverse mass matrix.
     /// </summary>
-    virtual void GetMassInverse(MatrixXR massInv) = 0;
+    virtual void getMassInverse(MatrixXR massInv) = 0;
 };
+
+#endif

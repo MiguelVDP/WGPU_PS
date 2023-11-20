@@ -1,8 +1,9 @@
-#pragma once
+#ifndef PHYSIC_MANAGER_H
+#define PHYSIC_MANAGER_H
 
 #include <Eigen/Dense>
 #include <simulable.h>
-#include <structs.h>
+#include <enums.h>
 
 using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
 using MatrixXR = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>;
@@ -19,6 +20,9 @@ public:
     Integration IntegrationMethod;
     int numDoFs;
 
-    void Initialize();
+    void initialize();
+
 
 };
+
+#endif

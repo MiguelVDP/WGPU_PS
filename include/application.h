@@ -1,4 +1,5 @@
-#pragma once
+#ifndef APPLICATION_H
+#define APPLICATION_H
 
 #include <webgpu/webgpu.hpp>
 #include <glfw/glfw3.h>
@@ -89,3 +90,5 @@ private:
 
     void onKeyPressed(int key, int action);
 };
+
+#endif
