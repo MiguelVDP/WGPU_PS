@@ -420,7 +420,7 @@ void Application::onKeyPressed(int key, int action) {
 //    m_mvpUniforms.viewMatrix = glm::lookAt(m_camState.pos, m_camState.front, m_camState.up);
 }
 
-Application::Application() {
+Application::Application(std::vector<Object> &vData) : m_vertexData(vData){
     m_camState.pos = glm::vec3(0.f);
     m_camState.front = glm::vec3(0.f, 0.f, -1.f);
     m_camState.up = glm::vec3(0.f, 1.f, 0.f);

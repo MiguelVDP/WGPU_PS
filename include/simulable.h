@@ -3,7 +3,6 @@
 
 #include <physicmanager.h>
 #include <Eigen/Dense>
-#include "physicmanager.h"
 
 using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
 using MatrixXR = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>;
@@ -15,7 +14,7 @@ public:
     /// <summary>
     /// initialize the simulable.
     /// </summary>
-    virtual void Initialize(int i, PhysicManager manager) = 0;
+    virtual void Initialize(int i) = 0;
 
     /// <summary>
     /// Returns the number of model DOF.

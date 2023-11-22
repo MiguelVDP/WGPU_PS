@@ -12,7 +12,7 @@
 class Application {
 public:
 
-    Application();
+    Application(std::vector<Object> &vData);
 
 // A function called only once at the beginning. Returns false is init failed.
     bool onInit(bool fullScreen);
@@ -33,7 +33,7 @@ public:
     wgpu::Buffer m_uTimeBuffer = nullptr;
     wgpu::Buffer m_mvpBuffer = nullptr;
 
-    std::vector<Object> m_vertexData;
+    std::vector<Object> &m_vertexData;
     int m_idxCount{};
     MyUniforms m_mvpUniforms{};
     float deltaTime = 0;

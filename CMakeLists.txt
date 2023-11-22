@@ -28,6 +28,8 @@ add_executable(WGPU_PS
         include/spring.h
         include/enums.h
         src/spring.cpp
+        include/massSpring.h
+        src/massSpring.cpp
 )
 
 target_link_libraries(WGPU_PS PRIVATE glfw webgpu glfw3webgpu glm)

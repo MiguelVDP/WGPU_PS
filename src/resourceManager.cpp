@@ -53,11 +53,15 @@ bool ResourceManager::loadGeometryFromObj(const ResourceManager::path &path, std
         size_t obj_idx = objectData.size();
         objectData.resize(obj_idx + 1);
         size_t vertex_count = shape.mesh.indices.size();
+        objectData[obj_idx].triangles.resize((long)vertex_count);
         objectData[obj_idx].positions.resize((long) vertex_count*3);
         objectData[obj_idx].renderNormals.resize((long) vertex_count*3);
         objectData[obj_idx].simNormals.resize((long) vertex_count*3);
         for (size_t i = 0; i < vertex_count; ++i) {
             const tinyobj::index_t &idx = shape.mesh.indices[i];
+
+            objectData[obj_idx].triangles[(long)i] = idx.vertex_index; //Assume 3 vertex faces (triangles)
+
             auto eI = (Eigen::Index) (3*i);
 
             objectData[obj_idx].positions(eI) = attrib.vertices[3 * idx.vertex_index + 0];

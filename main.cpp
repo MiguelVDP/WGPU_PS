@@ -5,6 +5,8 @@
 #include <structs.h>
 #include <application.h>
 #include <Eigen/Dense>
+#include <physicmanager.h>
+#include <massSpring.h>
 
 using namespace wgpu;
 namespace fs = std::filesystem;
@@ -32,9 +34,17 @@ void transformVertex2(Application &app, float t){
 
 
 int main() {
-    Application app;
 
-    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/plano.obj", app.m_vertexData);
+    std::vector<Object> objectData;
+
+    Application app(objectData);
+
+    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/plano.obj", objectData);
+
+    PhysicManager physicManager;
+    MassSpring massSpring(physicManager, objectData[0]);
+    massSpring.fillNodesAndSprings();
+    
     app.onInit(false);
 
     MyUniforms uniforms{};
