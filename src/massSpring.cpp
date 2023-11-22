@@ -2,6 +2,19 @@
 
 void MassSpring::Initialize(int i) {
 
+    index = i;
+    float nodeMass = mass / (float) nodes.size();
+    for (int n = 0; n < (int) nodes.size(); n++) {
+        nodes[n].initialize(index + 3 * i, nodeMass, dampingAlpha * nodeMass);
+        //Lo de los fixers
+    }
+
+    for (auto spring: springs) {
+        if (spring.springType == SpringType::Stretch)
+            spring.initialize(stiffnessStretch, dampingBeta * stiffnessStretch);
+        else if (spring.springType == SpringType::Bend)
+            spring.initialize(stiffnessBend, dampingBeta * stiffnessBend);
+    }
 }
 
 void MassSpring::fillNodesAndSprings() {
@@ -24,7 +37,7 @@ void MassSpring::fillNodesAndSprings() {
             int o = i + ((j + 2) % 3);
 
             Edge edge(object.triangles[a], object.triangles[b], object.triangles[o]);
-            if(edgeMap.insert({edge, i}).second){
+            if (edgeMap.insert({edge, i}).second) {
                 //If the edge already exist we should create a bend spring
                 auto it = edgeMap.find(edge);
                 Spring bendS(nodes[edge.o], nodes[it->first.o], SpringType::Bend, manager);
@@ -33,46 +46,69 @@ void MassSpring::fillNodesAndSprings() {
         }
     }
     //Once all the edges have been created we just have to create the stretch springs
-    for(auto & it : edgeMap){
+    for (auto &it: edgeMap) {
         Spring stretchS(nodes[it.first.a], nodes[it.first.b], SpringType::Stretch, manager);
         springs.push_back(stretchS);
     }
 }
 
 int MassSpring::getNumDoFs() {
-    return 0;
+    return 3 * (int) nodes.size();
 }
 
 void MassSpring::getPosition(VectorXR position) {
-
+    for (auto node: nodes)
+        node.getPosition(position);
 }
 
 void MassSpring::setPosition(VectorXR position) {
 
+    for (auto node: nodes)
+        node.setPosition(position);
+
+    for (auto spring: springs)
+        spring.updateState();
 }
 
 void MassSpring::getVelocity(VectorXR velocity) {
 
+    for (auto node: nodes)
+        node.getVelocity(velocity);
 }
 
 void MassSpring::setVelocity(VectorXR velocity) {
 
+    for (auto node: nodes)
+        node.setVelocity(velocity);
 }
 
 void MassSpring::getFore(VectorXR force) {
 
+    for (auto node: nodes)
+        node.getForce(force);
+
+    for (auto spring: springs)
+        spring.getForces(force);
 }
 
 void MassSpring::getForceJacobian(MatrixXR dFdx, MatrixXR dFdv) {
 
+    for (auto node: nodes)
+        node.getForceJacobian(dFdx, dFdv);
+
+    for (auto spring: springs)
+        spring.getForceJacobians(dFdx, dFdv);
 }
 
 void MassSpring::getMass(MatrixXR m) {
 
+    for (auto node: nodes)
+        node.getMass(m);
 }
 
 void MassSpring::getMassInverse(MatrixXR massInv) {
-
+    for (auto node: nodes)
+        node.getMassInverse(massInv);
 }
 
 MassSpring::MassSpring(PhysicManager &manager, Object &object) : manager(manager), object(object) {}
