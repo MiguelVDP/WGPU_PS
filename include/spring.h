@@ -17,6 +17,7 @@ public:
 
     float length0;
     float length;
+    VectorXR direction;
 
     Spring(Node &nodeA, Node &nodeB, SpringType springType, PhysicManager &manager);
 
