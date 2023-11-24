@@ -2,6 +2,7 @@
 #define PHYSIC_MANAGER_H
 
 #include <Eigen/Dense>
+#include <iostream>
 #include <simulable.h>
 #include <enums.h>
 
@@ -17,11 +18,16 @@ public:
     float timeStep;
     Vector3R gravity;
     std::vector<Simulable> simObjs;
-    Integration IntegrationMethod;
+    Integration integrationMethod;
     int numDoFs;
+
+    PhysicManager();
 
     void initialize();
 
+    void fixedUpdate();
+
+    void stepSymplectic();
 
 };
 

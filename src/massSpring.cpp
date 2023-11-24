@@ -1,7 +1,8 @@
 #include <massSpring.h>
 
-void MassSpring::Initialize(int i) {
+void MassSpring::initialize(int i) {
 
+    fillNodesAndSprings();
     index = i;
     float nodeMass = mass / (float) nodes.size();
     for (int n = 0; n < (int) nodes.size(); n++) {
@@ -24,8 +25,8 @@ void MassSpring::fillNodesAndSprings() {
         Vector3R pos(object.positions[i],
                      object.positions[i + 1],
                      object.positions[i + 2]);
-        Node n(manager, pos);
-        nodes.push_back(n);
+
+        nodes.emplace_back(manager, pos);
     }
 
     //Read the mesh edges to create the cloth springs.
@@ -40,15 +41,13 @@ void MassSpring::fillNodesAndSprings() {
             if (edgeMap.insert({edge, i}).second) {
                 //If the edge already exist we should create a bend spring
                 auto it = edgeMap.find(edge);
-                Spring bendS(nodes[edge.o], nodes[it->first.o], SpringType::Bend, manager);
-                springs.push_back(bendS);
+                springs.emplace_back(nodes[edge.o], nodes[it->first.o], SpringType::Bend, manager);
             }
         }
     }
     //Once all the edges have been created we just have to create the stretch springs
     for (auto &it: edgeMap) {
-        Spring stretchS(nodes[it.first.a], nodes[it.first.b], SpringType::Stretch, manager);
-        springs.push_back(stretchS);
+        springs.emplace_back(nodes[it.first.a], nodes[it.first.b], SpringType::Stretch, manager);
     }
 }
 

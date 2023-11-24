@@ -36,10 +36,10 @@ public:
 
     void getForce(VectorXR force);
 
-    void getForceJacobian(VectorXR dFdx, VectorXR dFdv);
+    void getForceJacobian(MatrixXR dFdx, MatrixXR dFdv);
 
 private:
-    PhysicManager &manager;
+    const PhysicManager &manager;
 
 };
 

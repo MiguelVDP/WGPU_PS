@@ -26,9 +26,7 @@ public:
 
     MassSpring(PhysicManager &manager, Object &object);
 
-    void Initialize(int i) override;
-
-    void fillNodesAndSprings();
+    void initialize(int i) override;
 
     int getNumDoFs() override;
 
@@ -52,6 +50,8 @@ private:
 
     PhysicManager &manager;
     Object &object;
+
+    void fillNodesAndSprings();
 
 };
 

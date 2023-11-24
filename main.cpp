@@ -11,12 +11,11 @@
 using namespace wgpu;
 namespace fs = std::filesystem;
 
-void transformVertex(Application &app, float t){
-    float angle = t;
+void transformVertex(Application &app){
     glm::mat4  m = glm::mat4(1.0f);
     m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0, -5));
-    m = glm::rotate(m, glm::radians(-90.0f), glm::vec3(t,0,0));
-    m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
+    m = glm::rotate(m, glm::radians(90.0f), glm::vec3(1,0,0));
+//    m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
     app.m_mvpUniforms.modelMatrix = m;
 }
 
@@ -43,7 +42,7 @@ int main() {
 
     PhysicManager physicManager;
     MassSpring massSpring(physicManager, objectData[0]);
-    massSpring.fillNodesAndSprings();
+//    massSpring.Initialize();
     
     app.onInit(false);
 
@@ -60,8 +59,8 @@ int main() {
     app.m_mvpUniforms.model2Matrix = glm::mat4(1.0f);
 
     while(app.isRunning()){
-        auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
-        transformVertex(app, t);
+//        auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
+        transformVertex(app);
 //        transformVertex2(app, t);
         app.onFrame();
     }

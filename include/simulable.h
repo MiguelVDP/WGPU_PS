@@ -14,7 +14,7 @@ public:
     /// <summary>
     /// initialize the simulable.
     /// </summary>
-    virtual void Initialize(int i) = 0;
+    virtual void initialize(int i) = 0;
 
     /// <summary>
     /// Returns the number of model DOF.

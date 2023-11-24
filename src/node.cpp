@@ -7,7 +7,6 @@
 
 void Node::initialize(int idx, float m, float damp) {
     index = idx;
-//    manager = physicManager;
     mass = m;
     damping = damp;
 }
@@ -18,47 +17,63 @@ Node::Node(PhysicManager &man, Vector3R p) : manager(man) {
 }
 
 void Node::getPosition(VectorXR position) {
-    position.setZero();
 
+    position.segment<3>(index) = pos;
 }
 
 void Node::setPosition(VectorXR position) {
 
-    position.setZero();
+    pos = position.segment<3>(index);
 }
 
 
 void Node::getVelocity(VectorXR velocity) {
 
-    velocity.setZero();
+    velocity.segment<3>(index) = vel;
 
 }
 
 void Node::setVelocity(VectorXR velocity) {
 
-    velocity.setZero();
+    vel = velocity.segment<3>(index);
 }
 
 void Node::getForce(VectorXR force) {
 
-    force.setZero();
+    //Gravity force
+    Vector3R gForce(manager.gravity.x() * mass,
+                    manager.gravity.y() * mass,
+                    manager.gravity.z() * mass);
+    force.segment<3>(index) += gForce;
+
+    //Damping force
+    Vector3R dForce(vel.x() * damping,
+                    vel.y() * damping,
+                    vel.z() * damping);
+    force.segment<3>(index) -= dForce;
 }
 
-void Node::getForceJacobian(VectorXR dFdx, VectorXR dFdv) {
+void Node::getForceJacobian(MatrixXR dFdx, MatrixXR dFdv) {
 
-    dFdv.setZero();
-    dFdx.setZero();
+    //dFdx stays unchanged because the node force (gravity) does not depend on its position.
+    static_cast<void>(dFdx); //We cast it to void to avoid the "unused parameter" error
 
+    MatrixXR dampingMat = MatrixXR::Identity(3, 3) * -damping;
+    dFdv.block<3, 3>(index, index) += dampingMat;
 }
 
 void Node::getMass(VectorXR m) {
 
-    m.setZero();
+    m[index] = mass;
+    m[index + 1] = mass;
+    m[index + 2] = mass;
 
 }
 
 void Node::getMassInverse(VectorXR massInv) {
 
-    massInv.setZero();
+    massInv[index] = 1.0f / mass;
+    massInv[index + 1] = 1.0f / mass;
+    massInv[index + 2] = 1.0f / mass;
 
 }
