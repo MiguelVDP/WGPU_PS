@@ -112,3 +112,12 @@ void MassSpring::getMassInverse(MatrixXR massInv) {
 
 MassSpring::MassSpring(PhysicManager &manager, Object &object) : manager(manager), object(object) {}
 
+void MassSpring::updateObjectState() {
+    VectorXR newPos(getNumDoFs());
+    for(auto node: nodes){
+        node.getPosition(newPos);
+    }
+    object.positions = newPos;
+}
+
+

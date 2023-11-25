@@ -60,6 +60,13 @@ public:
     /// Write inverse of mass values into the inverse mass matrix.
     /// </summary>
     virtual void getMassInverse(MatrixXR massInv) = 0;
+
+    /// <summary>
+    /// Update the object positions so that the render pipeline can read them
+    /// </summary>
+    virtual void updateObjectState() = 0;
+
+    virtual ~Simulable() = default;
 };
 
 #endif

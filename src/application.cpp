@@ -410,6 +410,7 @@ void Application::onMouseMove(double x, double y) {
 void Application::onKeyPressed(int key, int action) {
 
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) glfwSetWindowShouldClose(m_window, true);
+    if (key == GLFW_KEY_P && action == GLFW_PRESS) physicManager.unPause();
 
 //    float cameraSpeed = camSpeed * deltaTime;
 //    if(key == GLFW_KEY_W) m_camState.pos += m_camState.front * cameraSpeed;
@@ -420,7 +421,7 @@ void Application::onKeyPressed(int key, int action) {
 //    m_mvpUniforms.viewMatrix = glm::lookAt(m_camState.pos, m_camState.front, m_camState.up);
 }
 
-Application::Application(std::vector<Object> &vData) : m_vertexData(vData){
+Application::Application(std::vector<Object> &vData, PhysicManager& manager) : m_vertexData(vData), physicManager(manager){
     m_camState.pos = glm::vec3(0.f);
     m_camState.front = glm::vec3(0.f, 0.f, -1.f);
     m_camState.up = glm::vec3(0.f, 1.f, 0.f);

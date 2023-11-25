@@ -8,11 +8,12 @@
 #include <resourceManager.h>
 #include <pipelineData.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <physicmanager.h>
 
 class Application {
 public:
 
-    Application(std::vector<Object> &vData);
+    Application(std::vector<Object> &vData, PhysicManager& manager);
 
 // A function called only once at the beginning. Returns false is init failed.
     bool onInit(bool fullScreen);
@@ -38,6 +39,9 @@ public:
     MyUniforms m_mvpUniforms{};
     float deltaTime = 0;
     float lastFrameT = 0;
+
+    //PhysicManager
+    PhysicManager &physicManager;
 
 private:
     // Everything that is initialized in `onInit` and needed in `onFrame`.

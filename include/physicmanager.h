@@ -5,6 +5,7 @@
 #include <iostream>
 #include <simulable.h>
 #include <enums.h>
+#include <memory>
 
 using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
 using MatrixXR = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>;
@@ -17,7 +18,7 @@ public:
     bool paused;
     float timeStep;
     Vector3R gravity;
-    std::vector<Simulable> simObjs;
+    std::vector<std::unique_ptr<Simulable>> simObjs;
     Integration integrationMethod;
     int numDoFs;
 
@@ -28,6 +29,8 @@ public:
     void fixedUpdate();
 
     void stepSymplectic();
+
+    void unPause();
 
 };
 

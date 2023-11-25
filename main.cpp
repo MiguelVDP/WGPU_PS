@@ -7,6 +7,7 @@
 #include <Eigen/Dense>
 #include <physicmanager.h>
 #include <massSpring.h>
+#include <chrono>
 
 using namespace wgpu;
 namespace fs = std::filesystem;
@@ -35,14 +36,15 @@ void transformVertex2(Application &app, float t){
 int main() {
 
     std::vector<Object> objectData;
+    PhysicManager physicManager;
 
-    Application app(objectData);
+    Application app(objectData, physicManager);
 
     ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/plano.obj", objectData);
 
-    PhysicManager physicManager;
-    MassSpring massSpring(physicManager, objectData[0]);
-//    massSpring.Initialize();
+    std::unique_ptr<MassSpring> massSpring = std::make_unique<MassSpring>(physicManager, objectData[0]);
+    physicManager.simObjs.push_back(massSpring);
+    physicManager.initialize();
     
     app.onInit(false);
 
@@ -58,7 +60,30 @@ int main() {
     app.m_mvpUniforms.modelMatrix = glm::mat4(1.0f);
     app.m_mvpUniforms.model2Matrix = glm::mat4(1.0f);
 
+    constexpr std::chrono::milliseconds fixedTimeStep(33);
+
+    // Initialize variables for tracking time
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    auto previousTime = currentTime;
+    std::chrono::milliseconds lag(0);
+
     while(app.isRunning()){
+
+        currentTime = std::chrono::high_resolution_clock::now();
+        std::chrono::milliseconds elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - previousTime);
+        previousTime = currentTime;
+
+        // Accumulate lag
+        lag += elapsedTime;
+
+        //////    FIXED UPDATE    //////
+        while (lag >= fixedTimeStep) {
+            // Perform fixed update tasks here
+            physicManager.fixedUpdate();
+
+            // Decrease lag by the fixed time step
+            lag -= fixedTimeStep;
+        }
 //        auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
         transformVertex(app);
 //        transformVertex2(app, t);

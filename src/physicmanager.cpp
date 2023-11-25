@@ -8,8 +8,8 @@ void PhysicManager::initialize() {
     numDoFs = 0;
 
     for (auto &simObj: simObjs) {
-        simObj.initialize(numDoFs);
-        numDoFs += simObj.getNumDoFs();
+        simObj->initialize(numDoFs);
+        numDoFs += simObj->getNumDoFs();
     }
 }
 
@@ -38,6 +38,11 @@ void PhysicManager::fixedUpdate() {
             std::cerr << "INTEGRATION METHOD NOT SPECIFIED!" << std::endl;
             break;
     }
+
+    for (auto &sim: simObjs) {
+        sim->updateObjectState();
+    }
+    std::cout << "Updated!" << std::endl;
 }
 
 void PhysicManager::stepSymplectic() {
@@ -47,19 +52,23 @@ void PhysicManager::stepSymplectic() {
     MatrixXR massInv(numDoFs, numDoFs);
 
     for (auto &sim: simObjs) {
-        sim.getPosition(x);
-        sim.getVelocity(v);
-        sim.getFore(f);
-        sim.getMassInverse(massInv);
+        sim->getPosition(x);
+        sim->getVelocity(v);
+        sim->getFore(f);
+        sim->getMassInverse(massInv);
     }
 
     v += timeStep * (massInv * f);
     x += timeStep * v;
 
     for (auto &sim: simObjs) {
-        sim.setPosition(x);
-        sim.setVelocity(v);
+        sim->setPosition(x);
+        sim->setVelocity(v);
     }
+}
+
+void PhysicManager::unPause() {
+    paused = !paused;
 }
 
 

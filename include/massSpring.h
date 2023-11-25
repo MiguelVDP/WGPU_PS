@@ -46,7 +46,11 @@ public:
 
     void getMassInverse(MatrixXR massInv) override;
 
+    ~MassSpring() override = default;
+
 private:
+
+    void updateObjectState() override;
 
     PhysicManager &manager;
     Object &object;
