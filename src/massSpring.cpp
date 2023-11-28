@@ -5,8 +5,8 @@ void MassSpring::initialize(int i) {
     fillNodesAndSprings();
     index = i;
     float nodeMass = mass / (float) nodes.size();
-    for (int n = 0; n < (int) nodes.size(); n++) {
-        nodes[n].initialize(index + 3 * i, nodeMass, dampingAlpha * nodeMass);
+    for (auto & node : nodes) {
+        node.initialize(index + 3 * i, nodeMass, dampingAlpha * nodeMass);
         //Lo de los fixers
     }
 
@@ -31,20 +31,33 @@ void MassSpring::fillNodesAndSprings() {
 
     //Read the mesh edges to create the cloth springs.
     std::map<Edge, int, EdgeComparer> edgeMap;
+    int bCount = 0;
     for (int i = 0; i < object.triangles.size(); i += 3) {
         for (int j = 0; j < 3; j++) {
             int a = i + j;
             int b = i + ((j + 1) % 3);
             int o = i + ((j + 2) % 3);
 
-            Edge edge(object.triangles[a], object.triangles[b], object.triangles[o]);
-            if (edgeMap.insert({edge, i}).second) {
+            Edge edge((int)object.triangles[a], (int)object.triangles[b], (int)object.triangles[o]);
+            if (!edgeMap.insert({edge, i}).second) {
                 //If the edge already exist we should create a bend spring
                 auto it = edgeMap.find(edge);
-                springs.emplace_back(nodes[edge.o], nodes[it->first.o], SpringType::Bend, manager);
+                Edge aux = it->first;
+                if(it == edgeMap.end()){
+                    for(auto e:edgeMap){
+                        if((e.first.a == edge.a && e.first.b == edge.b)||(e.first.a == edge.b && e.first.b == edge.a)){
+                            aux = e.first;
+                            break;
+                        }
+                    }
+                }
+                std::cout << "Bend Edge: a: " << edge.a << ", b: " << edge.b << std::endl;
+                bCount++;
+                springs.emplace_back(nodes[edge.o], nodes[aux.o], SpringType::Bend, manager);
             }
         }
     }
+    std::cout << bCount <<std::endl;
     //Once all the edges have been created we just have to create the stretch springs
     for (auto &it: edgeMap) {
         springs.emplace_back(nodes[it.first.a], nodes[it.first.b], SpringType::Stretch, manager);

@@ -2,6 +2,8 @@
 #define STRUCTS_H
 
 #include <glm/glm.hpp>
+#include <map>
+#include <functional>
 
 struct MyUniforms {
     glm::mat4 projectionMatrix;
@@ -33,5 +35,25 @@ struct EdgeComparer{
         return !((e1.a == e2.a && e1.b == e2.b) || (e1.a == e2.b && e1.b == e2.a));
     }
 };
+
+namespace std {
+    template <>
+    struct hash<Edge> {
+        std::size_t operator()(const Edge& e) const {
+            // Use a combination of hash values for individual members
+            std::size_t hashValue = 17;
+            hash_combine(hashValue, std::min(e.a, e.b));
+            hash_combine(hashValue, std::max(e.a, e.b));
+            return hashValue;
+        }
+
+        // Helper function to combine hash values
+        template <class T>
+        void hash_combine(std::size_t& seed, const T& value) const {
+            std::hash<T> hasher;
+            seed ^= hasher(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+    };
+}
 
 #endif
