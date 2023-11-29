@@ -42,7 +42,7 @@ int main() {
 
     ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/plano.obj", objectData);
 
-    std::unique_ptr<MassSpring> massSpring = std::make_unique<MassSpring>(physicManager, objectData[0]);
+    MassSpring massSpring(physicManager, objectData[0]);
     physicManager.simObjs.push_back(massSpring);
     physicManager.initialize();
     

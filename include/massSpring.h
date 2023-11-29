@@ -2,6 +2,7 @@
 #define WGPU_PS_MASSSPRING_H
 
 #include <spring.h>
+#include <node.h>
 #include <simulable.h>
 #include <object.h>
 #include <structs.h>
@@ -10,6 +11,9 @@
 using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
 using MatrixXR = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>;
 using Vector3R = Eigen::Matrix<float, 3, 1>;
+
+class Node;
+class Spring;
 
 class MassSpring : Simulable{
 public:
@@ -47,10 +51,11 @@ public:
     void getMassInverse(MatrixXR massInv) override;
 
     ~MassSpring() override = default;
+    void updateObjectState() override;
 
 private:
 
-    void updateObjectState() override;
+
 
     PhysicManager &manager;
     Object &object;

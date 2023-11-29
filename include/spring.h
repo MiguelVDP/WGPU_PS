@@ -4,6 +4,15 @@
 #include <enums.h>
 #include <Eigen/Dense>
 #include <node.h>
+#include <physicmanager.h>
+
+
+using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
+using MatrixXR = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>;
+using Vector3R = Eigen::Matrix<float, 3, 1>;
+
+class Node;
+class PhysicManager;
 
 class Spring{
 public:

@@ -31,7 +31,7 @@ void MassSpring::fillNodesAndSprings() {
 
     //Read the mesh edges to create the cloth springs.
     std::map<Edge, int, EdgeComparer> edgeMap;
-    int bCount = 0;
+//    int bCount = 0;
     for (int i = 0; i < object.triangles.size(); i += 3) {
         for (int j = 0; j < 3; j++) {
             int a = i + j;
@@ -51,13 +51,12 @@ void MassSpring::fillNodesAndSprings() {
                         }
                     }
                 }
-                std::cout << "Bend Edge: a: " << edge.a << ", b: " << edge.b << std::endl;
-                bCount++;
+//                std::cout << "Bend Edge: a: " << edge.a << ", b: " << edge.b << std::endl;
+//                bCount++;
                 springs.emplace_back(nodes[edge.o], nodes[aux.o], SpringType::Bend, manager);
             }
         }
     }
-    std::cout << bCount <<std::endl;
     //Once all the edges have been created we just have to create the stretch springs
     for (auto &it: edgeMap) {
         springs.emplace_back(nodes[it.first.a], nodes[it.first.b], SpringType::Stretch, manager);
