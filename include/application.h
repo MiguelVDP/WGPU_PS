@@ -29,6 +29,7 @@ public:
     void onResize();
 
     //Buffers
+    wgpu::Buffer m_indexBuffer = nullptr;
     wgpu::Buffer m_vertexBuffer = nullptr;
     wgpu::Buffer m_normalBuffer = nullptr;
     wgpu::Buffer m_uTimeBuffer = nullptr;

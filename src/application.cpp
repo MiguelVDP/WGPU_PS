@@ -29,7 +29,7 @@ bool Application::onInit(bool fullScreen) {
 
     createPipeline();
 
-    m_idxCount = static_cast<int>(m_vertexData[0].positions.size())/3;
+    m_idxCount = static_cast<int>(m_vertexData[0].triangles.size());
 
     if (!m_window) {  //Check for errors
         std::cerr << "Could not open window!" << std::endl;
@@ -76,9 +76,11 @@ void Application::onFrame() {
 
     //Write Buffers
     m_queue.writeBuffer(m_vertexBuffer, 0, m_vertexData[0].positions.data(),
-                        m_vertexData[0].positions.size() * sizeof(float ));
+                        m_vertexData[0].positions.size() * sizeof(float));
     m_queue.writeBuffer(m_normalBuffer, 0, m_vertexData[0].renderNormals.data(),
-                        m_vertexData[0].renderNormals.size() * sizeof(float ));
+                        m_vertexData[0].renderNormals.size() * sizeof(float));
+    m_queue.writeBuffer(m_indexBuffer, 0, m_vertexData[0].triangles.data(),
+                        m_vertexData[0].triangles.size() * sizeof(uint16_t));
     auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
     m_queue.writeBuffer(m_uTimeBuffer, 0, &t, sizeof(float));
     m_queue.writeBuffer(m_mvpBuffer, 0, &m_mvpUniforms, sizeof(MyUniforms));
@@ -115,8 +117,9 @@ void Application::onFrame() {
     m_renderPass.setPipeline(m_renderPipeline);
     m_renderPass.setVertexBuffer(0, m_vertexBuffer, 0, m_vertexData[0].positions.size() * sizeof(float));
     m_renderPass.setVertexBuffer(1, m_normalBuffer, 0, m_vertexData[0].renderNormals.size() * sizeof(float));
+    m_renderPass.setIndexBuffer(m_indexBuffer, IndexFormat::Uint16, 0, m_vertexData[0].triangles.size() * sizeof(uint16_t));
     m_renderPass.setBindGroup(0, m_bindGroup, 0, nullptr);
-    m_renderPass.draw(m_idxCount, 1, 0, 0);
+    m_renderPass.drawIndexed(m_idxCount, 1, 0, 0, 0);
     m_renderPass.end();
 
     CommandBufferDescriptor cmdBuffDesc = Default;
@@ -145,6 +148,7 @@ void Application::onFinish() {
     m_instance.release(); //Clean up the WGPU instance
     m_uTimeBuffer.release();
     m_vertexBuffer.release();
+    m_indexBuffer.release();
     m_normalBuffer.release();
     m_mvpBuffer.release();
     m_depthBuffer.destroy();
@@ -223,7 +227,7 @@ bool Application::initWindowAndDevice(int width, int height) {
     requiredLimits.limits.maxVertexAttributes = 3;
     requiredLimits.limits.maxVertexBuffers = 2;
     requiredLimits.limits.maxInterStageShaderComponents = 6;
-    requiredLimits.limits.maxBufferSize = 10000 * sizeof(double );
+    requiredLimits.limits.maxBufferSize = 10000 * sizeof(double);
     requiredLimits.limits.maxVertexBufferArrayStride = sizeof(Object);
     requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
     requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
@@ -355,13 +359,17 @@ void Application::initBindings() {
 
 void Application::initBuffers() {
     BufferDescriptor bufferDesc;
-    bufferDesc.size = m_vertexData[0].positions.size() * sizeof(float );
+    bufferDesc.size = m_vertexData[0].positions.size() * sizeof(float);
     bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Vertex;
     bufferDesc.mappedAtCreation = false;
     m_vertexBuffer = m_device.createBuffer(bufferDesc);
 
     bufferDesc.size = m_vertexData[0].renderNormals.size() * sizeof(double);
     m_normalBuffer = m_device.createBuffer(bufferDesc);
+
+    bufferDesc.size = m_vertexData[0].triangles.size() * sizeof(uint16_t);
+    bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Index;
+    m_indexBuffer = m_device.createBuffer(bufferDesc);
 
     bufferDesc.size = sizeof(float);
     bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
@@ -421,7 +429,8 @@ void Application::onKeyPressed(int key, int action) {
 //    m_mvpUniforms.viewMatrix = glm::lookAt(m_camState.pos, m_camState.front, m_camState.up);
 }
 
-Application::Application(std::vector<Object> &vData, PhysicManager& manager) : m_vertexData(vData), physicManager(manager){
+Application::Application(std::vector<Object> &vData, PhysicManager &manager) : m_vertexData(vData),
+                                                                               physicManager(manager) {
     m_camState.pos = glm::vec3(0.f);
     m_camState.front = glm::vec3(0.f, 0.f, -1.f);
     m_camState.up = glm::vec3(0.f, 1.f, 0.f);

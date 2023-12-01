@@ -5,7 +5,7 @@
 
 using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
 using Vector3R = Eigen::Matrix<float, 3, 1>;
-using Vectori = Eigen::Matrix<int, Eigen::Dynamic, 1>;
+using Vectori = Eigen::Matrix<uint16_t , Eigen::Dynamic, 1>;
 
 class Object{
 public:
