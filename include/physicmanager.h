@@ -18,7 +18,7 @@ public:
     bool paused;
     float timeStep;
     Vector3R gravity;
-    std::vector<std::unique_ptr<Simulable>> simObjs;
+    std::vector<Simulable*> simObjs;
     Integration integrationMethod;
     int numDoFs;
 

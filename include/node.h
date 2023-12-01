@@ -22,21 +22,21 @@ public:
 
     void initialize(int idx, float m, float damp);
 
-    void getPosition(VectorXR position);
+    void getPosition(VectorXR& position);
 
-    void setPosition(VectorXR position);
+    void setPosition(VectorXR& position);
 
-    void getVelocity(VectorXR velocity);
+    void getVelocity(VectorXR& velocity);
 
-    void setVelocity(VectorXR velocity);
+    void setVelocity(VectorXR& velocity);
 
-    void getMass(VectorXR m);
+    void getMass(MatrixXR & m);
 
-    void getMassInverse(VectorXR massInv);
+    void getMassInverse(MatrixXR& massInv);
 
-    void getForce(VectorXR force);
+    void getForce(VectorXR& force);
 
-    void getForceJacobian(MatrixXR dFdx, MatrixXR dFdv);
+    void getForceJacobian(MatrixXR& dFdx, MatrixXR& dFdv);
 
 private:
     const PhysicManager &manager;

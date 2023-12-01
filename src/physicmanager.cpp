@@ -7,7 +7,7 @@ using Vector3R = Eigen::Matrix<float, 3, 1>;
 void PhysicManager::initialize() {
     numDoFs = 0;
 
-    for (auto &simObj: simObjs) {
+    for (auto simObj: simObjs) {
         simObj->initialize(numDoFs);
         numDoFs += simObj->getNumDoFs();
     }
@@ -42,7 +42,7 @@ void PhysicManager::fixedUpdate() {
     for (auto &sim: simObjs) {
         sim->updateObjectState();
     }
-    std::cout << "Updated!" << std::endl;
+    paused = true;
 }
 
 void PhysicManager::stepSymplectic() {

@@ -19,7 +19,7 @@ void Spring::updateState() {
     direction.normalize();
 }
 
-void Spring::getForces(VectorXR force) {
+void Spring::getForces(VectorXR& force) {
 
     static_cast<void>(force);
 //    Vector3R dirN = direction.normalized();
@@ -31,7 +31,7 @@ void Spring::getForces(VectorXR force) {
 
 }
 
-void Spring::getForceJacobians(MatrixXR dFdx, MatrixXR dFdv) {
+void Spring::getForceJacobians(MatrixXR& dFdx, MatrixXR& dFdv) {
 
     static_cast<void>(dFdx);
     static_cast<void>(dFdv);

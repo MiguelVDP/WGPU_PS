@@ -12,19 +12,20 @@
 using namespace wgpu;
 namespace fs = std::filesystem;
 
-void transformVertex(Application &app){
-    glm::mat4  m = glm::mat4(1.0f);
+void transformVertex(Application &app, float t) {
+    glm::mat4 m = glm::mat4(1.0f);
     m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0, -5));
-    m = glm::rotate(m, glm::radians(90.0f), glm::vec3(1,0,0));
-//    m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
+    m = glm::rotate(m, glm::radians(90.0f), glm::vec3(1, 0, 0));
+//    m = glm::rotate(m, t, glm::vec3(0, 0, 1));
+    static_cast<void>(t);
     app.m_mvpUniforms.modelMatrix = m;
 }
 
-void transformVertex2(Application &app, float t){
+void transformVertex2(Application &app, float t) {
     float angle = t;
-    glm::mat4  m = glm::mat4(1.0f);
+    glm::mat4 m = glm::mat4(1.0f);
     m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, -1, 0));
-    m = glm::rotate(m, glm::radians(-90.0f), glm::vec3(t,0,0));
+    m = glm::rotate(m, glm::radians(-90.0f), glm::vec3(t, 0, 0));
     m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
     m = glm::translate(m, glm::vec3(0.f, -1.5, 0));
     m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
@@ -42,10 +43,11 @@ int main() {
 
     ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/plano.obj", objectData);
 
-    std::unique_ptr<MassSpring> massSpring = std::make_unique<MassSpring>(physicManager, objectData[0]);
+    Simulable *massSpring = new MassSpring(0.5f, 5.f, 2.5f, 0.000001f, 0.00001f, physicManager, objectData[0]);
+//    Simulable* massSpring = new MassSpring(physicManager, objectData[0]);
     physicManager.simObjs.push_back(massSpring);
     physicManager.initialize();
-    
+
     app.onInit(false);
 
     MyUniforms uniforms{};
@@ -67,10 +69,11 @@ int main() {
     auto previousTime = currentTime;
     std::chrono::milliseconds lag(0);
 
-    while(app.isRunning()){
+    while (app.isRunning()) {
 
         currentTime = std::chrono::high_resolution_clock::now();
-        std::chrono::milliseconds elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - previousTime);
+        std::chrono::milliseconds elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                currentTime - previousTime);
         previousTime = currentTime;
 
         // Accumulate lag
@@ -84,9 +87,9 @@ int main() {
             // Decrease lag by the fixed time step
             lag -= fixedTimeStep;
         }
-//        auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
-        transformVertex(app);
-//        transformVertex2(app, t);
+        auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
+        transformVertex(app, t);
+        transformVertex2(app, t);
         app.onFrame();
     }
 

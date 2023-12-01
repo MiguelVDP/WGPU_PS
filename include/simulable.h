@@ -24,42 +24,42 @@ public:
     /// <summary>
     /// Write position values into the position vector.
     /// </summary>
-    virtual void getPosition(VectorXR position) = 0;
+    virtual void getPosition(VectorXR& position) = 0;
 
     /// <summary>
     /// Set position values from the position vector.
     /// </summary>
-    virtual void setPosition(VectorXR position) = 0;
+    virtual void setPosition(VectorXR& position) = 0;
 
     /// <summary>
     /// Write velocity values into the velocity vector.
     /// </summary>
-    virtual void getVelocity(VectorXR velocity) = 0;
+    virtual void getVelocity(VectorXR& velocity) = 0;
 
     /// <summary>
     /// Set velocity values from the velocity vector.
     /// </summary>
-    virtual void setVelocity(VectorXR velocity) = 0;
+    virtual void setVelocity(VectorXR& velocity) = 0;
 
     /// <summary>
     /// Write force values into the force vector.
     /// </summary>
-    virtual void getFore(VectorXR force) = 0;
+    virtual void getFore(VectorXR& force) = 0;
 
     /// <summary>
     /// Write force jacobian values into the matrix.
     /// </summary>
-    virtual void getForceJacobian(MatrixXR dFdx, MatrixXR dFdv) = 0;
+    virtual void getForceJacobian(MatrixXR& dFdx, MatrixXR& dFdv) = 0;
 
     /// <summary>
     /// Write mass values into the mass matrix.
     /// </summary>
-    virtual void getMass(MatrixXR mass) = 0;
+    virtual void getMass(MatrixXR& mass) = 0;
 
     /// <summary>
     /// Write inverse of mass values into the inverse mass matrix.
     /// </summary>
-    virtual void getMassInverse(MatrixXR massInv) = 0;
+    virtual void getMassInverse(MatrixXR& massInv) = 0;
 
     /// <summary>
     /// Update the object positions so that the render pipeline can read them

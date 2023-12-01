@@ -25,9 +25,9 @@ public:
 
     void updateState();
 
-    void getForces(VectorXR force);
+    void getForces(VectorXR& force);
 
-    void getForceJacobians(MatrixXR dFdx, MatrixXR dFdv);
+    void getForceJacobians(MatrixXR& dFdx, MatrixXR& dFdv);
 
 private:
     PhysicManager &manager;
