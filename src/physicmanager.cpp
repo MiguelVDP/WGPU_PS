@@ -49,7 +49,9 @@ void PhysicManager::stepSymplectic() {
     VectorXR x(numDoFs);
     VectorXR v(numDoFs);
     VectorXR f(numDoFs);
+    f.setZero();
     MatrixXR massInv(numDoFs, numDoFs);
+    massInv.setZero();
 
     for (auto &sim: simObjs) {
         sim->getPosition(x);

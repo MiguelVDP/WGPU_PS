@@ -418,7 +418,9 @@ void Application::onMouseMove(double x, double y) {
 void Application::onKeyPressed(int key, int action) {
 
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) glfwSetWindowShouldClose(m_window, true);
-    if (key == GLFW_KEY_P && action == GLFW_PRESS) physicManager.unPause();
+    if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+        physicManager.unPause();
+    }
 
 //    float cameraSpeed = camSpeed * deltaTime;
 //    if(key == GLFW_KEY_W) m_camState.pos += m_camState.front * cameraSpeed;
