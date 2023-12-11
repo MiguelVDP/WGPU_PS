@@ -21,6 +21,9 @@ void Node::getPosition(VectorXR &position) {
 }
 
 void Node::setPosition(VectorXR &position) {
+    if(index == 0)
+        return;
+
     pos = position.segment<3>(index);
 }
 

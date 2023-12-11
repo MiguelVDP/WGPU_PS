@@ -22,12 +22,12 @@ void Spring::updateState() {
 void Spring::getForces(VectorXR& force) {
 
     static_cast<void>(force);
-//    Vector3R dirN = direction.normalized();
-//    Vector3R dampForce = -damping * dirN * dirN.dot(nodeA.pos - nodeB.pos);
-//    Vector3R totalForce = -stiffness * (length - length0) * dirN + dampForce;
-//
-//    force.segment<3>(nodeA.index) += totalForce;
-//    force.segment<3>(nodeB.index) -= totalForce;
+    Vector3R dirN = direction.normalized();
+    Vector3R dampForce = -damping * dirN * dirN.dot(nodeA.pos - nodeB.pos);
+    Vector3R totalForce = -stiffness * (length - length0) * dirN + dampForce;
+
+    force.segment<3>(nodeA.index) += totalForce;
+    force.segment<3>(nodeB.index) -= totalForce;
 
 }
 
