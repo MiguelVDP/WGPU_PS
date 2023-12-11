@@ -12,48 +12,31 @@ struct MyUniforms {
     glm::mat4 model2Matrix;
 };
 
-struct CameraState{
+struct CameraState {
     glm::vec3 pos;
     glm::vec3 front;
     glm::vec3 up;
 };
 
-struct Edge{
-    ///Node A
+struct Edge {
     int a;
-    ///Node B
     int b;
-    ///Opposite vertex
     int o;
 
-    Edge(int _a, int _b, int _o) : a(_a), b(_b), o(_o){}
-};
+    // Define the hash function for the structure
+    std::size_t operator()(const Edge &e) const {
+        // Use a combination of hash values for each member
+        if (e.a > e.b)
+            return e.a * 31 + e.b;
 
-struct EdgeComparer{
-    bool operator()(const Edge& e1, const Edge& e2)const
-    {
-        return !((e1.a == e2.a && e1.b == e2.b) || (e1.a == e2.b && e1.b == e2.a));
+        return e.b * 31 + e.a;
+
+    }
+
+    // Define the equality operator
+    bool operator==(const Edge &e2) const {
+        return ((this->a == e2.a && this->b == e2.b) || (this->a == e2.b && this->b == e2.a));
     }
 };
-
-namespace std {
-    template <>
-    struct hash<Edge> {
-        std::size_t operator()(const Edge& e) const {
-            // Use a combination of hash values for individual members
-            std::size_t hashValue = 17;
-            hash_combine(hashValue, std::min(e.a, e.b));
-            hash_combine(hashValue, std::max(e.a, e.b));
-            return hashValue;
-        }
-
-        // Helper function to combine hash values
-        template <class T>
-        void hash_combine(std::size_t& seed, const T& value) const {
-            std::hash<T> hasher;
-            seed ^= hasher(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        }
-    };
-}
 
 #endif

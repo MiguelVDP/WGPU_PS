@@ -5,7 +5,7 @@
 #include <simulable.h>
 #include <object.h>
 #include <structs.h>
-#include <map>
+#include <unordered_set>
 
 using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
 using MatrixXR = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>;

@@ -15,7 +15,7 @@ namespace fs = std::filesystem;
 void transformVertex(Application &app, float t) {
     glm::mat4 m = glm::mat4(1.0f);
     m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0, -5));
-    m = glm::rotate(m, glm::radians(90.0f), glm::vec3(1, 0, 0));
+//    m = glm::rotate(m, glm::radians(90.0f), glm::vec3(1, 0, 0));
 //    m = glm::rotate(m, t, glm::vec3(0, 0, 1));
     static_cast<void>(t);
     app.m_mvpUniforms.modelMatrix = m;
@@ -43,9 +43,8 @@ int main() {
 
     ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/plano.obj", objectData);
 
-    Simulable *massSpring = new MassSpring(0.5f, 5.f, 2.5f, 0.000001f, 0.00001f, physicManager, objectData[0]);
-//    Simulable* massSpring = new MassSpring(physicManager, objectData[0]);
-    physicManager.simObjs.push_back(massSpring);
+    physicManager.simObjs.emplace_back(
+            std::unique_ptr<Simulable>(new MassSpring(0.5f, 5.f, 2.5f, 0.0f, 0.0f, physicManager, objectData[0])));
     physicManager.initialize();
 
     app.onInit(false);

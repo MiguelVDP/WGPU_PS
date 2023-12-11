@@ -7,7 +7,7 @@ using Vector3R = Eigen::Matrix<float, 3, 1>;
 void PhysicManager::initialize() {
     numDoFs = 0;
 
-    for (auto simObj: simObjs) {
+    for (auto& simObj: simObjs) {
         simObj->initialize(numDoFs);
         numDoFs += simObj->getNumDoFs();
     }
@@ -15,7 +15,7 @@ void PhysicManager::initialize() {
 
 PhysicManager::PhysicManager() {
     paused = true;
-    timeStep = 0.1f;
+    timeStep = 0.005f;
     gravity = Vector3R(0.0f, -9.8f, 0.0f);
     integrationMethod = Integration::Symplectic;
 }
@@ -42,7 +42,7 @@ void PhysicManager::fixedUpdate() {
     for (auto &sim: simObjs) {
         sim->updateObjectState();
     }
-    paused = true;
+//    paused = true;
 }
 
 void PhysicManager::stepSymplectic() {

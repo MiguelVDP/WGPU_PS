@@ -33,33 +33,27 @@ void MassSpring::fillNodesAndSprings() {
     std::cout << "Indices: " << object.triangles.size() << std::endl;
 
     //Read the mesh edges to create the cloth springs.
-    std::map<Edge, int, EdgeComparer> edgeMap;
+    std::unordered_set<Edge, Edge> edgeSet;
+    int bCount = 0;
     for (int i = 0; i < object.triangles.size(); i += 3) {
         for (int j = 0; j < 3; j++) {
             int a = i + j;
             int b = i + ((j + 1) % 3);
             int o = i + ((j + 2) % 3);
 
-            Edge edge((int)object.triangles[a], (int)object.triangles[b], (int)object.triangles[o]);
-            if (!edgeMap.insert({edge, i}).second) {
+            Edge edge = {(int)object.triangles[a], (int)object.triangles[b], (int)object.triangles[o]};
+            auto it = edgeSet.insert(edge);
+            if (!it.second) {
+                bCount++;
                 //If the edge already exist we should create a bend spring
-                auto it = edgeMap.find(edge);
-                Edge aux = it->first;
-                if(it == edgeMap.end()){
-                    for(auto e:edgeMap){
-                        if((e.first.a == edge.a && e.first.b == edge.b)||(e.first.a == edge.b && e.first.b == edge.a)){
-                            aux = e.first;
-                            break;
-                        }
-                    }
-                }
-                springs.emplace_back(nodes[edge.o], nodes[aux.o], SpringType::Bend, manager);
+                springs.emplace_back(nodes[edge.o], nodes[it.first->o], SpringType::Bend, manager);
             }
         }
     }
+    std::cout << "Stretch springs: " << edgeSet.size() << " Bend Springs: " << bCount << std::endl;
     //Once all the edges have been created we just have to create the stretch springs
-    for (auto &it: edgeMap) {
-        springs.emplace_back(nodes[it.first.a], nodes[it.first.b], SpringType::Stretch, manager);
+    for (auto &it: edgeSet) {
+        springs.emplace_back(nodes[it.a], nodes[it.b], SpringType::Stretch, manager);
     }
 }
 
@@ -104,8 +98,8 @@ void MassSpring::getFore(VectorXR& force) {
     for (Node& node: nodes)
         node.getForce(force);
 
-//    for (Spring& spring: springs)
-//        spring.getForces(force);
+    for (Spring& spring: springs)
+        spring.getForces(force);
 }
 
 void MassSpring::getForceJacobian(MatrixXR& dFdx, MatrixXR& dFdv) {
