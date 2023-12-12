@@ -1,21 +1,18 @@
-//
-// Created by Miguel on 21/10/2023.
-//
 #include "application.h"
 
 using namespace wgpu;
 
 bool Application::onInit(bool fullScreen) {
-    if (!glfwInit()) {  // Initialize GLFW & check for any GLFW error
+    if (!glfwInit()) {  // initialize GLFW & check for any GLFW error
         std::cout << "Could not initialize GLFW!" << std::endl;
         return false;
     }
 
-    if(fullScreen){
-        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    if (fullScreen) {
+        GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode *mode = glfwGetVideoMode(monitor);
         if (!initWindowAndDevice(mode->width, mode->height)) return false;
-    }else{
+    } else {
         if (!initWindowAndDevice(640, 480)) return false;
     }
 
@@ -32,7 +29,7 @@ bool Application::onInit(bool fullScreen) {
 
     createPipeline();
 
-    m_idxCount = static_cast<int>(m_vertexData.size());
+    m_idxCount = static_cast<int>(m_vertexData[0].triangles.size());
 
     if (!m_window) {  //Check for errors
         std::cerr << "Could not open window!" << std::endl;
@@ -44,7 +41,7 @@ bool Application::onInit(bool fullScreen) {
 }
 
 void Application::onFrame() {
-    auto currentFrameT = (float)glfwGetTime();
+    auto currentFrameT = (float) glfwGetTime();
     deltaTime = currentFrameT - lastFrameT;
     lastFrameT = currentFrameT;
 
@@ -70,7 +67,7 @@ void Application::onFrame() {
     renderPassColorAttachment.resolveTarget = nullptr;
     renderPassColorAttachment.loadOp = WGPULoadOp_Clear;
     renderPassColorAttachment.storeOp = WGPUStoreOp_Store;
-    renderPassColorAttachment.clearValue = WGPUColor{ 0.1, 0.1, 0.1, 0.0 };
+    renderPassColorAttachment.clearValue = WGPUColor{0.1, 0.1, 0.1, 0.0};
     renderPassDesc.colorAttachments = &renderPassColorAttachment;
 
     renderPassDesc.timestampWriteCount = 0;
@@ -78,9 +75,14 @@ void Application::onFrame() {
     renderPassDesc.nextInChain = nullptr;
 
     //Write Buffers
-    m_queue.writeBuffer(m_vertexBuffer, 0, m_vertexData.data(), m_vertexData.size() * sizeof(VertexAttributes));
+    m_queue.writeBuffer(m_vertexBuffer, 0, m_vertexData[0].positions.data(),
+                        m_vertexData[0].positions.size() * sizeof(float));
+    m_queue.writeBuffer(m_normalBuffer, 0, m_vertexData[0].renderNormals.data(),
+                        m_vertexData[0].renderNormals.size() * sizeof(float));
+    m_queue.writeBuffer(m_indexBuffer, 0, m_vertexData[0].triangles.data(),
+                        m_vertexData[0].triangles.size() * sizeof(uint16_t));
     auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
-    m_queue.writeBuffer(m_uTimeBuffer, 0, &t, sizeof(float ));
+    m_queue.writeBuffer(m_uTimeBuffer, 0, &t, sizeof(float));
     m_queue.writeBuffer(m_mvpBuffer, 0, &m_mvpUniforms, sizeof(MyUniforms));
 
     // Create the view of the depth texture manipulated by the rasterizer
@@ -113,9 +115,11 @@ void Application::onFrame() {
 
     m_renderPass = m_encoder.beginRenderPass(renderPassDesc);
     m_renderPass.setPipeline(m_renderPipeline);
-    m_renderPass.setVertexBuffer(0, m_vertexBuffer, 0, m_vertexData.size() * sizeof(VertexAttributes));
+    m_renderPass.setVertexBuffer(0, m_vertexBuffer, 0, m_vertexData[0].positions.size() * sizeof(float));
+    m_renderPass.setVertexBuffer(1, m_normalBuffer, 0, m_vertexData[0].renderNormals.size() * sizeof(float));
+    m_renderPass.setIndexBuffer(m_indexBuffer, IndexFormat::Uint16, 0, m_vertexData[0].triangles.size() * sizeof(uint16_t));
     m_renderPass.setBindGroup(0, m_bindGroup, 0, nullptr);
-    m_renderPass.draw(m_idxCount, 1, 0,0);
+    m_renderPass.drawIndexed(m_idxCount, 1, 0, 0, 0);
     m_renderPass.end();
 
     CommandBufferDescriptor cmdBuffDesc = Default;
@@ -144,6 +148,8 @@ void Application::onFinish() {
     m_instance.release(); //Clean up the WGPU instance
     m_uTimeBuffer.release();
     m_vertexBuffer.release();
+    m_indexBuffer.release();
+    m_normalBuffer.release();
     m_mvpBuffer.release();
     m_depthBuffer.destroy();
     m_depthBuffer.release();
@@ -154,22 +160,23 @@ bool Application::initWindowAndDevice(int width, int height) {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     m_window = glfwCreateWindow(width, height, "WGPU_PS", nullptr, nullptr);  //Create a window
 
-    double x,y;
+    double x, y;
     glfwGetCursorPos(m_window, &x, &y);
-    lastX = (float)x; lastY = (float)y;
+    lastX = (float) x;
+    lastY = (float) y;
 
-    glfwSetInputMode(m_window,GLFW_CURSOR ,GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetWindowUserPointer(m_window, this);
-    glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* window, int, int){
-        auto that = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
+    glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow *window, int, int) {
+        auto that = reinterpret_cast<Application *>(glfwGetWindowUserPointer(window));
         if (that != nullptr) that->onResize();
     });
-    glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double xPos, double yPos){
-        auto that = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
+    glfwSetCursorPosCallback(m_window, [](GLFWwindow *window, double xPos, double yPos) {
+        auto that = reinterpret_cast<Application *>(glfwGetWindowUserPointer(window));
         if (that != nullptr) that->onMouseMove(xPos, yPos);
     });
-    glfwSetKeyCallback(m_window, [](GLFWwindow* window, int key, int , int action, int ){
-        auto that = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
+    glfwSetKeyCallback(m_window, [](GLFWwindow *window, int key, int, int action, int) {
+        auto that = reinterpret_cast<Application *>(glfwGetWindowUserPointer(window));
         if (that != nullptr) that->onKeyPressed(key, action);
     });
 
@@ -218,10 +225,10 @@ bool Application::initWindowAndDevice(int width, int height) {
     //Now we set the required limits for our application
     RequiredLimits requiredLimits = Default;
     requiredLimits.limits.maxVertexAttributes = 3;
-    requiredLimits.limits.maxVertexBuffers = 1;
+    requiredLimits.limits.maxVertexBuffers = 2;
     requiredLimits.limits.maxInterStageShaderComponents = 6;
-    requiredLimits.limits.maxBufferSize = 1000 * sizeof(VertexAttributes);
-    requiredLimits.limits.maxVertexBufferArrayStride = sizeof(VertexAttributes);
+    requiredLimits.limits.maxBufferSize = 10000 * sizeof(double);
+    requiredLimits.limits.maxVertexBufferArrayStride = sizeof(Object);
     requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
     requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
     requiredLimits.limits.maxUniformBuffersPerShaderStage = 1;
@@ -294,7 +301,7 @@ void Application::initDepthBuffer() {
     depthTextureDesc.size = {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1};
     depthTextureDesc.usage = TextureUsage::RenderAttachment;
     depthTextureDesc.viewFormatCount = 1;
-    depthTextureDesc.viewFormats = (WGPUTextureFormat*)&m_depthBufferFormat;
+    depthTextureDesc.viewFormats = (WGPUTextureFormat *) &m_depthBufferFormat;
     m_depthBuffer = m_device.createTexture(depthTextureDesc);
 
 }
@@ -323,7 +330,7 @@ void Application::initBindings() {
     // Create the pipeline layout
     PipelineLayoutDescriptor layoutDesc = Default;
     layoutDesc.bindGroupLayoutCount = 1;
-    layoutDesc.bindGroupLayouts = (WGPUBindGroupLayout*)&m_bindGroupLayout;
+    layoutDesc.bindGroupLayouts = (WGPUBindGroupLayout *) &m_bindGroupLayout;
     PipelineLayout layout = m_device.createPipelineLayout(layoutDesc);
     m_pipelineData.pipeDesc.layout = layout;
 
@@ -352,10 +359,17 @@ void Application::initBindings() {
 
 void Application::initBuffers() {
     BufferDescriptor bufferDesc;
-    bufferDesc.size = m_vertexData.size() * sizeof(VertexAttributes);
+    bufferDesc.size = m_vertexData[0].positions.size() * sizeof(float);
     bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Vertex;
     bufferDesc.mappedAtCreation = false;
     m_vertexBuffer = m_device.createBuffer(bufferDesc);
+
+    bufferDesc.size = m_vertexData[0].renderNormals.size() * sizeof(double);
+    m_normalBuffer = m_device.createBuffer(bufferDesc);
+
+    bufferDesc.size = m_vertexData[0].triangles.size() * sizeof(uint16_t);
+    bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Index;
+    m_indexBuffer = m_device.createBuffer(bufferDesc);
 
     bufferDesc.size = sizeof(float);
     bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
@@ -372,22 +386,22 @@ void Application::onResize() {
     int width, height;
     glfwGetFramebufferSize(m_window, &width, &height);
 //    std::cout<< "Width: " << width << "    Height: " << height << std::endl;
-    float ratio = (float)width / (float)height;
+    float ratio = (float) width / (float) height;
     m_mvpUniforms.projectionMatrix = glm::perspective(glm::radians(60.0f), ratio, 0.01f, 100.0f);
 }
 
 void Application::onMouseMove(double x, double y) {
 
-    float xOffset = ((float)x - lastX) * sensitivity;
-    float yOffset = (lastY - (float)y) * sensitivity; //Reversed because y coordinates go from button to top
-    lastX = (float)x;
-    lastY = (float)y;
+    float xOffset = ((float) x - lastX) * sensitivity;
+    float yOffset = (lastY - (float) y) * sensitivity; //Reversed because y coordinates go from button to top
+    lastX = (float) x;
+    lastY = (float) y;
 
     yaw += xOffset;
     pitch += yOffset;
 
-    if(pitch > 89.0f) pitch = 89.0f;
-    if(pitch < -89.0f) pitch = -89.0f;
+    if (pitch > 89.0f) pitch = 89.0f;
+    if (pitch < -89.0f) pitch = -89.0f;
 
     glm::vec3 front;
     front.x = cos(glm::radians(yaw) * cos(glm::radians(pitch)));
@@ -403,7 +417,10 @@ void Application::onMouseMove(double x, double y) {
 
 void Application::onKeyPressed(int key, int action) {
 
-    if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) glfwSetWindowShouldClose(m_window, true);
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) glfwSetWindowShouldClose(m_window, true);
+    if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+        physicManager.unPause();
+    }
 
 //    float cameraSpeed = camSpeed * deltaTime;
 //    if(key == GLFW_KEY_W) m_camState.pos += m_camState.front * cameraSpeed;
@@ -414,10 +431,11 @@ void Application::onKeyPressed(int key, int action) {
 //    m_mvpUniforms.viewMatrix = glm::lookAt(m_camState.pos, m_camState.front, m_camState.up);
 }
 
-Application::Application() {
+Application::Application(std::vector<Object> &vData, PhysicManager &manager) : m_vertexData(vData),
+                                                                               physicManager(manager) {
     m_camState.pos = glm::vec3(0.f);
     m_camState.front = glm::vec3(0.f, 0.f, -1.f);
-    m_camState.up = glm::vec3 (0.f, 1.f, 0.f);
+    m_camState.up = glm::vec3(0.f, 1.f, 0.f);
     m_mvpUniforms.viewMatrix = glm::lookAt(m_camState.pos, m_camState.front, m_camState.up);
 }
 

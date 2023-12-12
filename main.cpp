@@ -4,24 +4,28 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <structs.h>
 #include <application.h>
+#include <Eigen/Dense>
+#include <physicmanager.h>
+#include <massSpring.h>
+#include <chrono>
 
 using namespace wgpu;
 namespace fs = std::filesystem;
 
-void transformVertex(Application &app, float t){
-    float angle = t;
-    glm::mat4  m = glm::mat4(1.0f);
+void transformVertex(Application &app, float t) {
+    glm::mat4 m = glm::mat4(1.0f);
     m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0, -5));
-    m = glm::rotate(m, glm::radians(-90.0f), glm::vec3(t,0,0));
-    m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
+//    m = glm::rotate(m, glm::radians(90.0f), glm::vec3(1, 0, 0));
+//    m = glm::rotate(m, t, glm::vec3(0, 0, 1));
+    static_cast<void>(t);
     app.m_mvpUniforms.modelMatrix = m;
 }
 
-void transformVertex2(Application &app, float t){
+void transformVertex2(Application &app, float t) {
     float angle = t;
-    glm::mat4  m = glm::mat4(1.0f);
+    glm::mat4 m = glm::mat4(1.0f);
     m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, -1, 0));
-    m = glm::rotate(m, glm::radians(-90.0f), glm::vec3(t,0,0));
+    m = glm::rotate(m, glm::radians(-90.0f), glm::vec3(t, 0, 0));
     m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
     m = glm::translate(m, glm::vec3(0.f, -1.5, 0));
     m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
@@ -31,9 +35,18 @@ void transformVertex2(Application &app, float t){
 
 
 int main() {
-    Application app;
 
-    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/pyramid.obj", app.m_vertexData);
+    std::vector<Object> objectData;
+    PhysicManager physicManager;
+
+    Application app(objectData, physicManager);
+
+    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/plano.obj", objectData);
+
+    physicManager.simObjs.emplace_back(
+            std::unique_ptr<Simulable>(new MassSpring(0.5f, 5.f, 2.5f, 0.001f, 0.001f, physicManager, objectData[0])));
+    physicManager.initialize();
+
     app.onInit(false);
 
     MyUniforms uniforms{};
@@ -48,10 +61,34 @@ int main() {
     app.m_mvpUniforms.modelMatrix = glm::mat4(1.0f);
     app.m_mvpUniforms.model2Matrix = glm::mat4(1.0f);
 
-    while(app.isRunning()){
+    constexpr std::chrono::milliseconds fixedTimeStep(33);
+
+    // Initialize variables for tracking time
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    auto previousTime = currentTime;
+    std::chrono::milliseconds lag(0);
+
+    while (app.isRunning()) {
+
+        currentTime = std::chrono::high_resolution_clock::now();
+        std::chrono::milliseconds elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                currentTime - previousTime);
+        previousTime = currentTime;
+
+        // Accumulate lag
+        lag += elapsedTime;
+
+        //////    FIXED UPDATE    //////
+        while (lag >= fixedTimeStep) {
+            // Perform fixed update tasks here
+            physicManager.fixedUpdate();
+
+            // Decrease lag by the fixed time step
+            lag -= fixedTimeStep;
+        }
         auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
         transformVertex(app, t);
-//        transformVertex2(app, t);
+        transformVertex2(app, t);
         app.onFrame();
     }
 

@@ -9,29 +9,36 @@ void PipelineData::setVertexDescription(wgpu::ShaderModule shaderModule) {
     pipeDesc.vertex.constantCount = 0;
     pipeDesc.vertex.constants = nullptr;
 
+
+    attributes.resize(2);
+    vertexBufferLayouts.resize(2);
     // == Per attribute ==
-    attributes.resize(3);
     //Position
     attributes[0].shaderLocation = 0;  // Corresponds to @location(...)
     attributes[0].format = wgpu::VertexFormat::Float32x3;
     attributes[0].offset = 0;
+
     //Normal
     attributes[1].shaderLocation = 1;
     attributes[1].format = wgpu::VertexFormat::Float32x3;
-    attributes[1].offset = 3 * sizeof(float);;
-    //Color
-    attributes[2].shaderLocation = 2;
-    attributes[2].format = wgpu::VertexFormat::Float32x3;
-    attributes[2].offset = 6 * sizeof(float);
+    attributes[1].offset = 0;
+
 
     // == Common to attributes from the same buffer ==
-    vertexBufferLayout.stepMode = wgpu::VertexStepMode::Vertex;
-    vertexBufferLayout.attributeCount = static_cast<uint32_t>(attributes.size());
-    vertexBufferLayout.attributes = attributes.data();
-    vertexBufferLayout.arrayStride = 9 * sizeof(float);
+    vertexBufferLayouts[0].stepMode = wgpu::VertexStepMode::Vertex;
+    vertexBufferLayouts[0].attributeCount = 1;
+    vertexBufferLayouts[0].attributes = &attributes[0];
+    vertexBufferLayouts[0].arrayStride = 3 * sizeof(float);
+
+    vertexBufferLayouts[1].stepMode = wgpu::VertexStepMode::Vertex;
+    vertexBufferLayouts[1].attributeCount = 1;
+    vertexBufferLayouts[1].attributes = &attributes[1];
+    vertexBufferLayouts[1].arrayStride = 3 * sizeof(float);
+
+
     //Buffers from the information will be sent
-    pipeDesc.vertex.bufferCount = 1;
-    pipeDesc.vertex.buffers = &vertexBufferLayout;
+    pipeDesc.vertex.bufferCount =  static_cast<uint32_t>(vertexBufferLayouts.size());
+    pipeDesc.vertex.buffers = vertexBufferLayouts.data();
 }
 
 void PipelineData::setPrimitiveDescriptor() {

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef APPLICATION_H
+#define APPLICATION_H
 
 #include <webgpu/webgpu.hpp>
 #include <glfw/glfw3.h>
@@ -7,11 +8,12 @@
 #include <resourceManager.h>
 #include <pipelineData.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <physicmanager.h>
 
 class Application {
 public:
 
-    Application();
+    Application(std::vector<Object> &vData, PhysicManager& manager);
 
 // A function called only once at the beginning. Returns false is init failed.
     bool onInit(bool fullScreen);
@@ -27,15 +29,20 @@ public:
     void onResize();
 
     //Buffers
+    wgpu::Buffer m_indexBuffer = nullptr;
     wgpu::Buffer m_vertexBuffer = nullptr;
+    wgpu::Buffer m_normalBuffer = nullptr;
     wgpu::Buffer m_uTimeBuffer = nullptr;
     wgpu::Buffer m_mvpBuffer = nullptr;
 
-    std::vector<VertexAttributes> m_vertexData;
+    std::vector<Object> &m_vertexData;
     int m_idxCount{};
     MyUniforms m_mvpUniforms{};
     float deltaTime = 0;
     float lastFrameT = 0;
+
+    //PhysicManager
+    PhysicManager &physicManager;
 
 private:
     // Everything that is initialized in `onInit` and needed in `onFrame`.
@@ -88,3 +95,5 @@ private:
 
     void onKeyPressed(int key, int action);
 };
+
+#endif

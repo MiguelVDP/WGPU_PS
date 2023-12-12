@@ -1,12 +1,12 @@
-#include <webgpu/webgpu.hpp>
+#ifndef PIPELINE_DATA_H
+#define PIPELINE_DATA_H
 
-#ifndef WGPU_PS_PIPELINEDATA_H
-#define WGPU_PS_PIPELINEDATA_H
+#include <webgpu/webgpu.hpp>
 
 class PipelineData{
 public:
     wgpu::RenderPipelineDescriptor pipeDesc;
-    wgpu::VertexBufferLayout vertexBufferLayout;
+    std::vector<wgpu::VertexBufferLayout> vertexBufferLayouts;
     std::vector<wgpu::VertexAttribute> attributes;
     wgpu::FragmentState fragmentState;
     wgpu::BlendState blendState;
@@ -22,4 +22,4 @@ public:
 };
 
 
-#endif //WGPU_PS_PIPELINEDATA_H
+#endif

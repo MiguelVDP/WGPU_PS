@@ -1,6 +1,8 @@
-#pragma once
+#ifndef RESOURCE_MANAGER_H
+#define RESOURCE_MANAGER_H
 
 #include <structs.h>
+#include <object.h>
 #include <filesystem>
 #include <fstream>
 #include <webgpu/webgpu.hpp>
@@ -17,5 +19,9 @@ public:
     static wgpu::ShaderModule loadShaderModule(const path& path, wgpu::Device device);
 
     // Load an 3D mesh from a standard .obj file into a vertex data buffer
-    static bool loadGeometryFromObj(const path& path, std::vector<VertexAttributes>& vertexData);
+//    static bool loadGeometryFromObj(const path& path, std::vector<VertexAttributes>& vertexData);
+
+    static bool loadGeometryFromObj(const path& path, std::vector<Object>& objectData);
 };
+
+#endif
