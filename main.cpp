@@ -44,7 +44,7 @@ int main() {
     ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/plano.obj", objectData);
 
     physicManager.simObjs.emplace_back(
-            std::unique_ptr<Simulable>(new MassSpring(0.5f, 5.f, 2.5f, 0.0f, 0.0f, physicManager, objectData[0])));
+            std::unique_ptr<Simulable>(new MassSpring(0.5f, 5.f, 2.5f, 0.001f, 0.001f, physicManager, objectData[0])));
     physicManager.initialize();
 
     app.onInit(false);
