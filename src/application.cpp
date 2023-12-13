@@ -226,7 +226,7 @@ bool Application::initWindowAndDevice(int width, int height) {
     RequiredLimits requiredLimits = Default;
     requiredLimits.limits.maxVertexAttributes = 3;
     requiredLimits.limits.maxVertexBuffers = 2;
-    requiredLimits.limits.maxInterStageShaderComponents = 6;
+    requiredLimits.limits.maxInterStageShaderComponents = 10;
     requiredLimits.limits.maxBufferSize = 10000 * sizeof(double);
     requiredLimits.limits.maxVertexBufferArrayStride = sizeof(Object);
     requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;

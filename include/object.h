@@ -2,6 +2,7 @@
 #define OBJECT_H
 
 #include <Eigen/Dense>
+#include <iostream>
 
 using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
 using Vector3R = Eigen::Matrix<float, 3, 1>;
@@ -22,6 +23,8 @@ public:
     //Render
     VectorXR renderNormals;
     Vectori faces;
+
+    void computeNormals();
 };
 
 #endif

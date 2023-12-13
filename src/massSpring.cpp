@@ -128,6 +128,7 @@ MassSpring::MassSpring(PhysicManager &manager, Object &object) : manager(manager
 
 void MassSpring::updateObjectState() {
     getPosition(object.positions);
+    object.computeNormals();
 }
 
 
