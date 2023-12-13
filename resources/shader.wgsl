@@ -20,6 +20,7 @@ struct VertexOutput {
     @builtin(position) position: vec4f,
     @location(0) color: vec3f,
     @location(1) normal: vec3f,
+    @location(2) v_pos: vec4f,
 };
 
 @vertex
@@ -30,23 +31,44 @@ fn vs_main(@builtin(instance_index) instanceIdx : u32, in: VertexInput) -> Verte
     out.position = vec4f(in.position.x, (in.position.y * ratio), in.position.z, 1.0);
     if(instanceIdx == u32(1)){
         out.position =  uMVP.projMat * uMVP.viewMat * uMVP.model2Mat * out.position;
-        out.normal = (uMVP.model2Mat * vec4f(in.normal, 0.0)).xyz;
+        out.v_pos = uMVP.viewMat * uMVP.model2Mat * out.position;
+        out.normal = (uMVP.viewMat * uMVP.model2Mat * vec4f(in.normal, 0.0)).xyz;
     }else{
         out.position =  uMVP.projMat * uMVP.viewMat * uMVP.modelMat * out.position;
-        out.normal = (uMVP.modelMat * vec4f(in.normal, 0.0)).xyz;
+        out.v_pos = uMVP.viewMat * uMVP.modelMat * out.position;
+        out.normal = (uMVP.viewMat * uMVP.modelMat * vec4f(in.normal, 0.0)).xyz;
     }
 
-    out.color = vec3(0.8, 0.3, 0.6); // forward to the fragment shader
+    out.color = vec3(0.6, 0.0, 0.6); // forward to the fragment shader
     return out;
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4f {
-    let n = normalize(in.normal);
-    let lightDirection = vec3f(0.0, 0.0, -1.0);
-    let shading = dot(-lightDirection, n);
-    let ambient = vec3(0.3, 0.0, 0.3);
-    var color = max(in.color * shading, vec3(0.0));
-    color += ambient;
-    return vec4f(color, 1.0);
+    let N = normalize(in.normal);
+    let pp = in.v_pos.xyz; //Point position in world coordenades
+    let pl = vec3(0.0); //Light position in world coordenades
+    let L = normalize(pl - pp); //Normalized light direction (inverted)
+    let R = reflect(-L, N);
+    let V = normalize(-pp);
+    let n = 100.0;
+
+    let Ia = vec3(0.1); //Ambient intensiti
+    let Ka = in.color; //Ambient object component
+    let Il = vec3(1.0); //Light intensity
+    let Kd = in.color; //Difuse object component
+    let Ks = vec3(0.0, 0.0, 1.0); //Specular object component
+
+    var shading = vec3(0.0);
+
+    shading += Ia * Ka; //Ambient factor
+    shading += Il * Kd * max(0.0, dot(L,N)); //Difuse factor
+//    shading += Il * Ks * pow(max(0.0, dot(R,V)), n); //Specular factor
+
+//    let lightDirection = vec3f(0.0, 0.0, -1.0);
+//    let shading = max(0,dot(-lightDirection, N));
+//    let ambient = vec3(0.3, 0.0, 0.3);
+//    var color = max(in.color * shading, vec3(0.0));
+//    color += ambient;
+    return vec4f(shading, 1.0);
 }
