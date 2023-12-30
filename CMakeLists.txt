@@ -9,28 +9,31 @@ include_directories(
 add_executable(WGPU_PS
         #Header files
         include/application.h
+        include/enums.h
+        include/massSpring.h
         include/node.h
         include/object.h
         include/physicmanager.h
+        include/physicmanagerPBD.h
         include/pipelineData.h
         include/resourceManager.h
         include/simulable.h
+        include/spring.h
         include/structs.h
         include/tiny_obj_loader.h
+
         #Source files
         main.cpp
         src/application.cpp
-        src/node.cpp
-        src/physicmanager.cpp
-        src/pipelineData.cpp
         src/implementations.cpp
-        src/resourceManager.cpp
-        include/spring.h
-        include/enums.h
-        src/spring.cpp
-        include/massSpring.h
         src/massSpring.cpp
+        src/node.cpp
         src/object.cpp
+        src/physicmanager.cpp
+        src/physicmanagerPBD.cpp
+        src/pipelineData.cpp
+        src/resourceManager.cpp
+        src/spring.cpp
 )
 
 target_link_libraries(WGPU_PS PRIVATE glfw webgpu glfw3webgpu glm)
