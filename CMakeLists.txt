@@ -11,14 +11,18 @@ add_executable(WGPU_PS
         include/application.h
         include/enums.h
         include/massSpring.h
+        include/PBD/massSpringPBD.h
         include/node.h
+        include/PBD/nodePBD.h
         include/object.h
         include/physicmanager.h
-        include/physicmanagerPBD.h
+        include/PBD/physicmanagerPBD.h
         include/pipelineData.h
         include/resourceManager.h
         include/simulable.h
+        include/PBD/simulablePBD.h
         include/spring.h
+        include/PBD/springPBD.h
         include/structs.h
         include/tiny_obj_loader.h
 
@@ -27,13 +31,16 @@ add_executable(WGPU_PS
         src/application.cpp
         src/implementations.cpp
         src/massSpring.cpp
+        src/PBD/massSpringPBD.cpp
         src/node.cpp
+        src/PBD/nodePBD.cpp
         src/object.cpp
         src/physicmanager.cpp
-        src/physicmanagerPBD.cpp
+        src/PBD/physicmanagerPBD.cpp
         src/pipelineData.cpp
         src/resourceManager.cpp
         src/spring.cpp
+
 )
 
 target_link_libraries(WGPU_PS PRIVATE glfw webgpu glfw3webgpu glm)
