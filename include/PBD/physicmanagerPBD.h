@@ -1,10 +1,10 @@
 #ifndef WGPU_PS_PHYSICMANAGERPBD_H
 #define WGPU_PS_PHYSICMANAGERPBD_H
 
-#include "Eigen/Dense"
+#include <Eigen/Dense>
 #include <iostream>
-#include "PBD/simulablePBD.h"
-#include "enums.h"
+#include <PBD/simulablePBD.h>
+#include <enums.h>
 #include <memory>
 
 using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
@@ -32,7 +32,7 @@ public:
     void fixedUpdate();
 
     void unPause();
-}
+};
 
 
 

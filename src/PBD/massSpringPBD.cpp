@@ -1,7 +1,7 @@
 //
 // Created by migue on 10/01/2024.
 //
-#include "PBD/massSpringPBD.h"
+#include <PBD/massSpringPBD.h>
 
 MassSpringPBD::MassSpringPBD(float mass, float stiffnessStretch, float stiffnessBend, PhysicManagerPBD &manager,
                              Object &object) : mass(mass), stiffnessStretch(stiffnessStretch),

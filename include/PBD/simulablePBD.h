@@ -1,7 +1,3 @@
-//
-// Created by migue on 09/01/2024.
-//
-
 #ifndef WGPU_PS_SIMULABLEPBD_H
 #define WGPU_PS_SIMULABLEPBD_H
 

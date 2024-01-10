@@ -5,8 +5,8 @@
 #ifndef WGPU_PS_MASSSPRINGPBD_H
 #define WGPU_PS_MASSSPRINGPBD_H
 
-#include <PBD/simulablePBD.h>
 #include <PBD/springPBD.h>
+#include <PBD/simulablePBD.h>
 #include <structs.h>
 #include <object.h>
 #include <unordered_set>

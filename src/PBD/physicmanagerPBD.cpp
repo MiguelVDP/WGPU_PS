@@ -1,7 +1,7 @@
 //
 // Created by Miguel on 30/12/2023.
 //
-#include "PBD/physicmanagerPBD.h"
+#include <PBD/physicmanagerPBD.h>
 
 void PhysicManagerPBD::initialize() {
     numDoFs = 0;
@@ -29,6 +29,9 @@ void PhysicManagerPBD::fixedUpdate() {
         sim->getExtFore(fExt);
         sim->getMassInverse(massInv);
     }
+
+    v = v + timeStep * fExt;
+    p = x + timeStep * v;
 
 
 
