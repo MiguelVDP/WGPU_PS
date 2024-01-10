@@ -11,7 +11,6 @@ class SpringPBD{
 public:
     NodePBD &nodeA;
     NodePBD &nodeB;
-    float length;
     float length0;
     float stiffness;
     VectorXR direction;
@@ -19,13 +18,31 @@ public:
 
     SpringPBD(NodePBD &node1, NodePBD &node2) : nodeA(node1), nodeB(node2){
         direction = (nodeA.pos - nodeB.pos);
-        length = direction.norm();
-        length0 = length;
+        length0 = direction.norm();
         direction.normalize();
     }
 
     void initialize(float stiff){
         stiffness = stiff;
+    }
+
+    void projectDistanceConstraint(VectorXR p){
+        Vector3R pA = p.segment<3>(nodeA.index);
+        Vector3R pB = p.segment<3>(nodeB.index);
+        float wA = nodeA.massInv;
+        float wB = nodeB.massInv;
+
+        Vector3R dist = pA - pB;
+
+        float length = dist.norm();
+
+        float correction = (length - length0) / length / (wA + wB);
+
+        pA -= wA * correction * dist;
+        pB += wB * correction * dist;
+
+        p.segment<3>(nodeA.index) = pA;
+        p.segment<3>(nodeB.index) = pB;
     }
 
 };

@@ -20,25 +20,38 @@ void PhysicManagerPBD::fixedUpdate() {
     VectorXR v(numDoFs); //Velocity vector
     VectorXR fExt(numDoFs); //External forces vector
     fExt.setZero();
-    MatrixXR massInv(numDoFs, numDoFs);
-    massInv.setZero();
 
     for (auto &sim: simObjs) {
         sim->getPosition(x);
         sim->getVelocity(v);
         sim->getExtFore(fExt);
-        sim->getMassInverse(massInv);
     }
 
+    //Compute velocity according to external forces
     v = v + timeStep * fExt;
+    //Compute the predicted positions (without constraints)
     p = x + timeStep * v;
 
+    //TODO Collisions
 
+    //Apply constraints
+
+    for (auto &sim: simObjs) {
+        sim->projectConstraints(p);
+    }
+
+    //Correct velocities
+    v = (p - x) / timeStep;
+
+    for (auto &sim: simObjs) {
+        sim->setVelocity(v);
+        sim->setPosition(p);
+    }
 
 }
 
 void PhysicManagerPBD::unPause() {
-
+    paused = !paused;
 }
 
 

@@ -61,6 +61,11 @@ public:
     /// </summary>
     virtual void updateObjectState() = 0;
 
+    /// <summary>
+    /// Correct the given predicted positions in order to solve the constraints
+    /// </summary>
+    virtual void projectConstraints(VectorXR& p) = 0;
+
     virtual ~SimulablePBD() = default;
 };
 

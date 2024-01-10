@@ -46,6 +46,10 @@ private:
 
     void getMassInverse(MatrixXR &massInv) override;
 
+    void projectConstraints(VectorXR &p) override;
+
+private:
+
     ~MassSpringPBD() override = default;
 
 private:

@@ -47,9 +47,9 @@ void MassSpringPBD::fillNodesAndSprings() {
             Edge edge = {(int)object.triangles[a], (int)object.triangles[b], (int)object.triangles[o]};
             auto it = edgeSet.insert(edge);
             if (!it.second) {
-                bCount++;
-                //If the edge already exist we should create a bend spring
-                springs.emplace_back(nodes[edge.o], nodes[it.first->o]);
+//                bCount++;
+//                //If the edge already exist we should create a bend spring
+//                springs.emplace_back(nodes[edge.o], nodes[it.first->o]);
             }
         }
     }
@@ -105,4 +105,10 @@ void MassSpringPBD::getMassInverse(MatrixXR &massInv) {
 void MassSpringPBD::updateObjectState() {
     getPosition(object.positions);
     object.computeNormals();
+}
+
+void MassSpringPBD::projectConstraints(VectorXR &p) {
+    for(auto &spring : springs){
+        spring.projectDistanceConstraint(p);
+    }
 }
