@@ -9,11 +9,12 @@
 #include <pipelineData.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <physicmanager.h>
+#include <PBD/physicmanagerPBD.h>
 
 class Application {
 public:
 
-    Application(std::vector<Object> &vData, PhysicManager& manager);
+    Application(std::vector<Object> &vData, PhysicManager& manager, PhysicManagerPBD &pbdM);
 
 // A function called only once at the beginning. Returns false is init failed.
     bool onInit(bool fullScreen);
@@ -43,6 +44,7 @@ public:
 
     //PhysicManager
     PhysicManager &physicManager;
+    PhysicManagerPBD &physicManagerPbd;
 
 private:
     // Everything that is initialized in `onInit` and needed in `onFrame`.
