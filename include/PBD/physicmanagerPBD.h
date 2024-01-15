@@ -19,12 +19,14 @@ public:
     Vector3R gravity;
     std::vector<std::unique_ptr<SimulablePBD>> simObjs;
     int numDoFs;
+    int simIterations;
 
     PhysicManagerPBD(){
         paused = true;
-        timeStep = 0.005f;
+        timeStep = 0.01f;
         gravity = Vector3R(0.0f, -9.8f, 0.0f);
         numDoFs = 0;
+        simIterations = 10;
     }
 
     void initialize();
@@ -32,6 +34,8 @@ public:
     void fixedUpdate();
 
     void unPause();
+
+    void step();
 };
 
 

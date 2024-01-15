@@ -11,7 +11,10 @@ NodePBD::NodePBD(PhysicManagerPBD &man, Vector3R p) : manager(man) {
 void NodePBD::initialize(int idx, float m) {
     index = idx;
     mass = m;
-    massInv = 1.0f / m;
+    if(idx == 0)
+        massInv = 0;
+    else
+        massInv = 1.0f / m;
 }
 
 void NodePBD::getPosition(VectorXR &position) {
@@ -23,7 +26,7 @@ void NodePBD::setPosition(VectorXR &position) {
 }
 
 void NodePBD::getVelocity(VectorXR &velocity) {
-    velocity.segment<3>(index) = pos;
+    velocity.segment<3>(index) = vel;
 }
 
 void NodePBD::setVelocity(VectorXR &velocity) {
@@ -45,5 +48,8 @@ void NodePBD::getExtForce(VectorXR &extForce) {
     Vector3R gForce(manager.gravity.x() * mass,
                     manager.gravity.y() * mass,
                     manager.gravity.z() * mass);
-    extForce.segment<3>(index) += gForce;
+    if(index == 0)
+        return;
+    else
+        extForce.segment<3>(index) += gForce;
 }

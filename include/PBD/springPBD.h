@@ -7,7 +7,7 @@
 
 #include <PBD/nodePBD.h>
 
-class SpringPBD{
+class SpringPBD {
 public:
     NodePBD &nodeA;
     NodePBD &nodeB;
@@ -16,17 +16,17 @@ public:
     VectorXR direction;
 
 
-    SpringPBD(NodePBD &node1, NodePBD &node2) : nodeA(node1), nodeB(node2){
+    SpringPBD(NodePBD &node1, NodePBD &node2) : nodeA(node1), nodeB(node2) {
         direction = (nodeA.pos - nodeB.pos);
         length0 = direction.norm();
         direction.normalize();
     }
 
-    void initialize(float stiff){
+    void initialize(float stiff) {
         stiffness = stiff;
     }
 
-    void projectDistanceConstraint(VectorXR p){
+    void projectDistanceConstraint(VectorXR &p) {
         Vector3R pA = p.segment<3>(nodeA.index);
         Vector3R pB = p.segment<3>(nodeB.index);
         float wA = nodeA.massInv;
@@ -35,11 +35,12 @@ public:
         Vector3R dist = pA - pB;
 
         float length = dist.norm();
+        dist.normalize();
 
-        float correction = (length - length0) / length / (wA + wB);
+        Vector3R correction = ((length - length0) * dist) / (wA + wB);
 
-        pA -= wA * correction * dist;
-        pB += wB * correction * dist;
+        pA -= wA * correction;
+        pB += wB * correction;
 
         p.segment<3>(nodeA.index) = pA;
         p.segment<3>(nodeB.index) = pB;

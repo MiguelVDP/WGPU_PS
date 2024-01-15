@@ -35,23 +35,40 @@ void PhysicManagerPBD::fixedUpdate() {
     //TODO Collisions
 
     //Apply constraints
-
-    for (auto &sim: simObjs) {
-        sim->projectConstraints(p);
+    for(int it = 0 ; it < simIterations; it++){
+        for (auto &sim: simObjs) {
+            sim->projectConstraints(p);
+        }
     }
 
     //Correct velocities
     v = (p - x) / timeStep;
+
+//    std::cout << "----------------------------- \n Vf:" << std::endl;
+//    for (int i = 0; i < p.size(); i += 3) {
+//        std::cout << "(" << v[i] << ", " << v[i + 1] << ", " << v[i + 2] << ")" << std::endl;
+//    }
 
     for (auto &sim: simObjs) {
         sim->setVelocity(v);
         sim->setPosition(p);
     }
 
+    for (auto &sim: simObjs) {
+        sim->updateObjectState();
+    }
+
+//    std::cout << "///////////////////////////////////" << std::endl;
 }
 
 void PhysicManagerPBD::unPause() {
     paused = !paused;
+}
+
+void PhysicManagerPBD::step() {
+    paused = false;
+    fixedUpdate();
+    paused = true;
 }
 
 

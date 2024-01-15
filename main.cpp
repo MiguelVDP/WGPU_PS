@@ -7,6 +7,8 @@
 #include <Eigen/Dense>
 #include <physicmanager.h>
 #include <massSpring.h>
+#include <PBD/physicmanagerPBD.h>
+#include <PBD/massSpringPBD.h>
 #include <chrono>
 
 using namespace wgpu;
@@ -37,14 +39,14 @@ void transformVertex2(Application &app, float t) {
 int main() {
 
     std::vector<Object> objectData;
-    PhysicManager physicManager;
+    PhysicManager physicManagerd;
+    PhysicManagerPBD physicManager;
+    Application app(objectData, physicManagerd ,physicManager);
 
-    Application app(objectData, physicManager);
-
-    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/plano.obj", objectData);
+    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/triangle.obj", objectData);
 
     physicManager.simObjs.emplace_back(
-            std::unique_ptr<Simulable>(new MassSpring(0.5f, 5.f, 2.5f, 0.001f, 0.001f, physicManager, objectData[0])));
+            std::unique_ptr<SimulablePBD>(new MassSpringPBD(0.5f, 5.f, 2.5f, physicManager, objectData[0])));
     physicManager.initialize();
 
     app.onInit(false);
