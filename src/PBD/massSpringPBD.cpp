@@ -47,9 +47,10 @@ void MassSpringPBD::fillNodesAndSprings() {
             Edge edge = {(int)object.triangles[a], (int)object.triangles[b], (int)object.triangles[o]};
             auto it = edgeSet.insert(edge);
             if (!it.second) {
-//                bCount++;
-//                //If the edge already exist we should create a bend spring
-//                springs.emplace_back(nodes[edge.o], nodes[it.first->o]);
+                bCount++;
+                //If the edge already exist we should create a bend spring
+//                bendingGroups.push_back({edge.a, edge.b, edge.o, it.first->o});
+                springs.emplace_back(nodes[edge.o], nodes[it.first->o]);
             }
         }
     }
@@ -112,3 +113,7 @@ void MassSpringPBD::projectConstraints(VectorXR &p) {
         spring.projectDistanceConstraint(p);
     }
 }
+
+//void MassSpringPBD::projectBendingConstraint(VectorXR &p) {
+//
+//}
