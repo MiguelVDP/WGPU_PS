@@ -23,7 +23,7 @@ public:
 
     PhysicManagerPBD(){
         paused = true;
-        timeStep = 0.01f;
+        timeStep = 0.05f;
         gravity = Vector3R(0.0f, -9.8f, 0.0f);
         numDoFs = 0;
         simIterations = 10;

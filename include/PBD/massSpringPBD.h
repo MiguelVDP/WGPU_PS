@@ -6,6 +6,7 @@
 #define WGPU_PS_MASSSPRINGPBD_H
 
 #include <PBD/springPBD.h>
+#include <PBD/bendGroupPBD.h>
 #include <PBD/simulablePBD.h>
 #include <structs.h>
 #include <object.h>
@@ -15,6 +16,7 @@ class MassSpringPBD : public SimulablePBD {
 
     std::vector<NodePBD> nodes;
     std::vector<SpringPBD> springs;
+    std::vector<BendGroup> bendingGroups;
 
     float mass{};
     float stiffnessStretch{};

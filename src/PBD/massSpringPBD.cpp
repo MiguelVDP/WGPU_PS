@@ -20,6 +20,11 @@ void MassSpringPBD::initialize(int idx) {
 
             spring.initialize(stiffnessStretch);
     }
+
+    //
+    for(BendGroup& bendGroup : bendingGroups){
+        bendGroup.initialize();
+    }
 }
 
 void MassSpringPBD::fillNodesAndSprings() {
@@ -49,8 +54,8 @@ void MassSpringPBD::fillNodesAndSprings() {
             if (!it.second) {
                 bCount++;
                 //If the edge already exist we should create a bend spring
-//                bendingGroups.push_back({edge.a, edge.b, edge.o, it.first->o});
-                springs.emplace_back(nodes[edge.o], nodes[it.first->o]);
+                bendingGroups.emplace_back(nodes[edge.a], nodes[edge.b], nodes[edge.o], nodes[it.first->o]);
+//                springs.emplace_back(nodes[edge.o], nodes[it.first->o]);
             }
         }
     }
@@ -112,8 +117,8 @@ void MassSpringPBD::projectConstraints(VectorXR &p) {
     for(auto &spring : springs){
         spring.projectDistanceConstraint(p);
     }
-}
 
-//void MassSpringPBD::projectBendingConstraint(VectorXR &p) {
-//
-//}
+    for(auto &bendGroup : bendingGroups){
+        bendGroup.projectBendingConstraint(p);
+    }
+}

@@ -68,6 +68,7 @@ void PhysicManagerPBD::unPause() {
 void PhysicManagerPBD::step() {
     paused = false;
     fixedUpdate();
+    std::cout << "step" << std::endl;
     paused = true;
 }
 

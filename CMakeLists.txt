@@ -40,6 +40,7 @@ add_executable(WGPU_PS
         src/pipelineData.cpp
         src/resourceManager.cpp
         src/spring.cpp
+        include/PBD/bendGroupPBD.h
 
 )
 
