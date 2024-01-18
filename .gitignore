@@ -11,3 +11,4 @@
 #builds
 /cmake-build-debug/
 /build/
+/build-web/
