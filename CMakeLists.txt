@@ -48,7 +48,7 @@ target_link_libraries(WGPU_PS PRIVATE glfw webgpu glfw3webgpu glm)
 
 set_target_properties(WGPU_PS PROPERTIES
         CXX_STANDARD 17
-        COMPILE_WARNING_AS_ERROR ON
+        COMPILE_WARNING_AS_ERROR OFF
         )
 
 if (MSVC)
@@ -63,7 +63,9 @@ if(XCODE)
             XCODE_SCHEME_ENABLE_GPU_FRAME_CAPTURE_MODE "Metal")
 endif()
 
-add_subdirectory(glfw)
+if (NOT EMSCRIPTEN)
+    add_subdirectory(glfw)
+endif ()
 add_subdirectory(WebGPU-distribution-wgpu)
 add_subdirectory(glfw3webgpu)
 add_subdirectory(glm)
@@ -91,4 +93,19 @@ else()
     target_compile_definitions(WGPU_PS PRIVATE
             RESOURCE_DIR="./resources"
     )
+endif()
+
+# At the end of the CMakeLists.txt
+if (EMSCRIPTEN)
+    # Add Emscripten-specific link options
+    target_link_options(WGPU_PS PRIVATE
+            -sUSE_GLFW=3 # Use Emscripten-provided GLFW
+            -sUSE_WEBGPU # Handle WebGPU symbols
+            -sASYNCIFY # Required by WebGPU-C++
+            -sALLOW_MEMORY_GROWTH
+    )
+
+    # Generate a full web page rather than a simple WebAssembly module
+    set_target_properties(WGPU_PS PROPERTIES SUFFIX ".html")
+
 endif()
