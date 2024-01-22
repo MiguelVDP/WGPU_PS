@@ -6,6 +6,7 @@
 #include <PBD/simulablePBD.h>
 #include <enums.h>
 #include <memory>
+#include <application.h>
 
 using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
 using MatrixXR = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>;
@@ -21,8 +22,8 @@ public:
     int numDoFs;
     int simIterations;
 
-    PhysicManagerPBD(){
-        paused = true;
+    explicit PhysicManagerPBD(Application &app) : app(app) {
+        paused = false;
         timeStep = 0.05f;
         gravity = Vector3R(0.0f, -9.8f, 0.0f);
         numDoFs = 0;

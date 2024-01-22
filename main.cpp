@@ -40,8 +40,9 @@ int main() {
 
     std::vector<Object> objectData;
     PhysicManager physicManagerd;
-    PhysicManagerPBD physicManager;
-    Application app(objectData, physicManagerd ,physicManager);
+    Application app(objectData);
+    PhysicManagerPBD physicManager(app);
+
 
     ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/triangle.obj", objectData);
 
