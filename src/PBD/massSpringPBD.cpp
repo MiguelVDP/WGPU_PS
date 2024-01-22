@@ -54,8 +54,8 @@ void MassSpringPBD::fillNodesAndSprings() {
             if (!it.second) {
                 bCount++;
                 //If the edge already exist we should create a bend spring
-                bendingGroups.emplace_back(nodes[edge.a], nodes[edge.b], nodes[edge.o], nodes[it.first->o]);
-//                springs.emplace_back(nodes[edge.o], nodes[it.first->o]);
+//                bendingGroups.emplace_back(nodes[edge.a], nodes[edge.b], nodes[edge.o], nodes[it.first->o]);
+                springs.emplace_back(nodes[edge.o], nodes[it.first->o]);
             }
         }
     }

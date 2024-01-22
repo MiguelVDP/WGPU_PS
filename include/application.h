@@ -25,6 +25,8 @@ public:
     // A function called only once at the very end.
     void onFinish();
 
+    void onCompute();
+
     bool isRunning() { return !glfwWindowShouldClose(m_window); }
 
     void onResize();
@@ -35,6 +37,10 @@ public:
     wgpu::Buffer m_normalBuffer = nullptr;
     wgpu::Buffer m_uTimeBuffer = nullptr;
     wgpu::Buffer m_mvpBuffer = nullptr;
+
+    //Compute Buffers
+    wgpu::Buffer m_inputBuffer = nullptr;
+    wgpu::Buffer m_outputBuffer = nullptr;
 
     std::vector<Object> &m_vertexData;
     int m_idxCount{};
@@ -72,6 +78,15 @@ private:
     wgpu::RenderPassEncoder m_renderPass = nullptr;
     wgpu::TextureView m_depthTextureView = nullptr;
 
+    //GPU compute values
+    wgpu::ComputePassEncoder m_computePass = nullptr;
+    wgpu::ComputePipeline m_computePipeline = nullptr;
+    wgpu::ShaderModule m_computeShaderModule = nullptr;
+    std::vector<wgpu::BindGroupLayoutEntry> m_computeBindingLayoutEntries;
+    wgpu::BindGroupLayout m_computeBindGroupLayout = nullptr;
+    wgpu::BindGroup m_computeBindGroup = nullptr;
+    wgpu::PipelineLayout m_computePipelineLayout = nullptr;
+
     //Camera view variables
     float lastX = 0;
     float lastY = 0;
@@ -96,6 +111,12 @@ private:
     void onMouseMove(double x, double y);
 
     void onKeyPressed(int key, int action);
+
+    void initComputeBindings();
+
+    void initComputeBuffers();
+
+    void createComputePipeline();
 };
 
 #endif

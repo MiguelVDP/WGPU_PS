@@ -29,6 +29,12 @@ bool Application::onInit(bool fullScreen) {
 
     createPipeline();
 
+    initComputeBuffers();
+
+    initComputeBindings();
+
+    createComputePipeline();
+
     m_idxCount = static_cast<int>(m_vertexData[0].triangles.size());
 
     if (!m_window) {  //Check for errors
@@ -153,6 +159,12 @@ void Application::onFinish() {
     m_mvpBuffer.release();
     m_depthBuffer.destroy();
     m_depthBuffer.release();
+
+    m_inputBuffer.release();
+    m_outputBuffer.release();
+    m_computeBindGroup.release();
+    m_computePipeline.release();
+    m_computeBindGroupLayout.release();
 }
 
 bool Application::initWindowAndDevice(int width, int height) {
@@ -236,11 +248,27 @@ bool Application::initWindowAndDevice(int width, int height) {
     requiredLimits.limits.maxBindingsPerBindGroup = 2;
     requiredLimits.limits.maxBindGroups = 2;
     requiredLimits.limits.maxUniformBuffersPerShaderStage = 2;
+
+    requiredLimits.limits.maxStorageBuffersPerShaderStage = 2;
+    requiredLimits.limits.maxStorageBufferBindingSize = 64 * sizeof (float);
     // For the depth buffer, we enable textures (up to the size of the window):
     requiredLimits.limits.maxTextureDimension1D = 2160;
     requiredLimits.limits.maxTextureDimension2D = 3840;
     requiredLimits.limits.maxTextureArrayLayers = 1;
     deviceDesc.requiredLimits = &requiredLimits;
+
+    //Compute limits
+    // The maximum value for respectively w, h and d
+    requiredLimits.limits.maxComputeWorkgroupSizeX = 32;
+    requiredLimits.limits.maxComputeWorkgroupSizeY = 1;
+    requiredLimits.limits.maxComputeWorkgroupSizeZ = 1;
+
+    // The maximum value of the product w * h * d
+    requiredLimits.limits.maxComputeInvocationsPerWorkgroup = 32;
+
+    // And the maximum value of max(x, y, z)
+    // (It is 2 because workgroupCount = 64 / 32 = 2)
+    requiredLimits.limits.maxComputeWorkgroupsPerDimension = 32;
 
     m_device = m_adapter.requestDevice(deviceDesc);
 
@@ -441,6 +469,115 @@ Application::Application(std::vector<Object> &vData, PhysicManager &manager, Phy
     m_camState.front = glm::vec3(0.f, 0.f, -1.f);
     m_camState.up = glm::vec3(0.f, 1.f, 0.f);
     m_mvpUniforms.viewMatrix = glm::lookAt(m_camState.pos, m_camState.front, m_camState.up);
+}
+
+void Application::createComputePipeline() {
+    m_computeShaderModule = ResourceManager::loadShaderModule(RESOURCE_DIR "/computeShader.wgsl", m_device);
+    ComputePipelineDescriptor computePipelineDesc = Default;
+    computePipelineDesc.compute.entryPoint = "computeStuff";
+    computePipelineDesc.compute.module = m_computeShaderModule;
+    computePipelineDesc.layout = m_computePipelineLayout;
+    m_computePipeline = m_device.createComputePipeline(computePipelineDesc);
+}
+
+void Application::onCompute() {
+
+    // Initialize a command encoder
+    Queue queue = m_device.getQueue();
+    CommandEncoderDescriptor encoderDesc = Default;
+    CommandEncoder encoder = m_device.createCommandEncoder(encoderDesc);
+
+    ComputePassDescriptor computePassDesc;
+    computePassDesc.timestampWriteCount = 0;
+    computePassDesc.timestampWrites = nullptr;
+
+    // Fill in input buffer
+    std::vector<float> input(64);
+    for (int i = 0; i < (int)input.size(); ++i) {
+        input[i] = 0.1f * (float)i;
+    }
+    m_queue.writeBuffer(m_inputBuffer, 0, input.data(), 64*sizeof(float));
+
+    m_computePass = encoder.beginComputePass(computePassDesc);
+    m_computePass.setPipeline(m_computePipeline);
+    m_computePass.setBindGroup(0, m_computeBindGroup, 0, nullptr);
+    m_computePass.dispatchWorkgroups(32,1,1);
+    m_computePass.end();
+
+    CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
+    queue.submit(commands);
+
+    // Clean up
+#if !defined(WEBGPU_BACKEND_WGPU)
+    wgpuCommandBufferRelease(commands);
+    wgpuCommandEncoderRelease(encoder);
+    wgpuQueueRelease(queue);
+    wgpuComputePassEncoderRelease(computePass);
+#endif
+}
+
+void Application::initComputeBindings() {
+    //We set the amount of layout entries
+    m_computeBindingLayoutEntries.resize(2);
+
+    //Input Buffer
+    m_computeBindingLayoutEntries[0].binding = 0;
+    m_computeBindingLayoutEntries[0].buffer.type = BufferBindingType::ReadOnlyStorage;
+    m_computeBindingLayoutEntries[0].visibility = ShaderStage::Compute;
+
+    //Output Buffer
+    m_computeBindingLayoutEntries[1].binding = 1;
+    m_computeBindingLayoutEntries[1].buffer.type = BufferBindingType::Storage;
+    m_computeBindingLayoutEntries[1].visibility = ShaderStage::Compute;
+
+    //We create the layout group
+    BindGroupLayoutDescriptor bindGroupLayoutDesc;
+    bindGroupLayoutDesc.entryCount = (uint32_t)m_computeBindingLayoutEntries.size();
+    bindGroupLayoutDesc.entries = m_computeBindingLayoutEntries.data();
+    m_computeBindGroupLayout = m_device.createBindGroupLayout(bindGroupLayoutDesc);
+
+    //Create the pipeline layout
+    PipelineLayoutDescriptor pipelineLayoutDesc;
+    pipelineLayoutDesc.bindGroupLayoutCount = 1;
+    pipelineLayoutDesc.bindGroupLayouts = (WGPUBindGroupLayout*)&m_computeBindGroupLayout;
+    m_computePipelineLayout = m_device.createPipelineLayout(pipelineLayoutDesc);
+
+    //Now we create the bind group
+    std::vector<BindGroupEntry> entries(2, Default);
+
+    //Input Buffer
+    entries[0].binding = 0;
+    entries[0].buffer = m_inputBuffer;
+    entries[0].offset = 0;
+    entries[0].size = m_inputBuffer.getSize();
+
+    //Output Buffer
+    entries[1].binding = 1;
+    entries[1].buffer = m_outputBuffer;
+    entries[1].offset = 0;
+    entries[1].size = m_outputBuffer.getSize();
+
+    BindGroupDescriptor bindGroupDesc;
+    bindGroupDesc.layout = m_computeBindGroupLayout;
+    bindGroupDesc.entryCount = entries.size();
+    bindGroupDesc.entries = (WGPUBindGroupEntry*)entries.data();
+    m_computeBindGroup = m_device.createBindGroup(bindGroupDesc);
+
+}
+
+void Application::initComputeBuffers() {
+    auto size = 64 * sizeof(float);
+
+    //Input Buffer
+    BufferDescriptor buffDesc;
+    buffDesc.mappedAtCreation = false;
+    buffDesc.size = size;
+    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopyDst;
+    m_inputBuffer = m_device.createBuffer(buffDesc);
+
+    //Output Buffer
+    buffDesc.usage = BufferUsage::Storage;
+    m_outputBuffer = m_device.createBuffer(buffDesc);
 }
 
 

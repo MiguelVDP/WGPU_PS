@@ -7,7 +7,7 @@
 
 #include <PBD/nodePBD.h>
 
-class BendGroup {
+class BendGroup { //BendStencil
 public:
     std::vector<NodePBD*> nodes;
     NodePBD &x0, x1; //Internal nodes
