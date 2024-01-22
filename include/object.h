@@ -25,6 +25,8 @@ public:
     Vectori faces;
 
     void computeNormals();
+
+    void localToWorld();
 };
 
 #endif
