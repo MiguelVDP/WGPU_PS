@@ -47,4 +47,25 @@ void Object::computeNormals() {
     }
 }
 
+void Object::localToWorld() {
+    Eigen::Translation3f translation(0.0f, 0.0f, -5.0f);
+    Eigen::Affine3f transform = Eigen::Affine3f::Identity() * translation;
+    Eigen::Matrix4f modelMat = transform.matrix();
+
+    for (int v = 0; v < positions.size(); v+=3) {
+        Vector3R pos = positions.segment<3>(v);
+        Eigen::Matrix<float, 4, 1> vert(pos.x(), pos.y(), pos.z(), 1.0);
+        vert = modelMat * vert;
+        positions.segment<3>(v) = vert.segment<3>(0);
+    }
+
+    std::cout << "----------------------------- \n Vf:" << std::endl;
+    for (int i = 0; i < positions.size(); i += 3) {
+        std::cout << "(" << positions[i] << ", " << positions[i + 1] << ", " << positions[i + 2] << ")" << std::endl;
+    }
+
+    std::cout<< "end";
+
+}
+
 

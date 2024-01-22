@@ -30,13 +30,13 @@ fn vs_main(@builtin(instance_index) instanceIdx : u32, in: VertexInput) -> Verte
 
     out.position = vec4f(in.position.x, (in.position.y * ratio), in.position.z, 1.0);
     if(instanceIdx == u32(1)){
-        out.position =  uMVP.projMat * uMVP.viewMat * uMVP.model2Mat * out.position;
-        out.v_pos = uMVP.viewMat * uMVP.model2Mat * out.position;
+        out.position =  uMVP.projMat * uMVP.viewMat * out.position;
+        out.v_pos = uMVP.viewMat * out.position;
         out.normal = (uMVP.viewMat * uMVP.model2Mat * vec4f(in.normal, 0.0)).xyz;
     }else{
         out.position =  uMVP.projMat * uMVP.viewMat * uMVP.modelMat * out.position;
-        out.v_pos = uMVP.viewMat * uMVP.modelMat * out.position;
-        out.normal = (uMVP.viewMat * uMVP.modelMat * vec4f(in.normal, 0.0)).xyz;
+        out.v_pos = uMVP.viewMat * out.position;
+        out.normal = (uMVP.viewMat * vec4f(in.normal, 0.0)).xyz;
     }
 
     out.color = vec3(0.6, 0.0, 0.6); // forward to the fragment shader
@@ -46,8 +46,8 @@ fn vs_main(@builtin(instance_index) instanceIdx : u32, in: VertexInput) -> Verte
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4f {
     let N = normalize(in.normal);
-    let pp = in.v_pos.xyz; //Point position in world coordenades
-    let pl = vec3(0.0); //Light position in world coordenades
+    let pp = in.v_pos.xyz; //Point position in view coordenades
+    let pl = vec3(0.0); //Light position in view coordenades
     let L = normalize(pl - pp); //Normalized light direction (inverted)
     let R = reflect(-L, N);
     let V = normalize(-pp);

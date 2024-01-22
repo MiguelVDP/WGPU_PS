@@ -45,6 +45,10 @@ int main() {
 
     ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/triangle.obj", objectData);
 
+    for(auto &obj : objectData){
+        obj.localToWorld();
+    }
+
     physicManager.simObjs.emplace_back(
             std::unique_ptr<SimulablePBD>(new MassSpringPBD(0.5f, 5.f, 2.5f, physicManager, objectData[0])));
     physicManager.initialize();
