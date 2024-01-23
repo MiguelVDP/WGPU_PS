@@ -24,7 +24,7 @@ public:
     // A function called only once at the very end.
     void onFinish();
 
-    void onCompute();
+    void onCompute(VectorXR& p);
 
     bool isRunning() { return !glfwWindowShouldClose(m_window); }
 
@@ -40,6 +40,8 @@ public:
     //Compute Buffers
     wgpu::Buffer m_inputBuffer = nullptr;
     wgpu::Buffer m_outputBuffer = nullptr;
+    wgpu::Buffer m_mapBuffer = nullptr;
+    size_t m_computeBufferSize;
 
     std::vector<Object> &m_vertexData;
     int m_idxCount{};
