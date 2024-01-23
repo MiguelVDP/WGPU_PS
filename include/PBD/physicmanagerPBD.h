@@ -12,7 +12,6 @@ using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
 using MatrixXR = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>;
 using Vector3R = Eigen::Matrix<float, 3, 1>;
 
-
 class PhysicManagerPBD{
 public:
     bool paused;
@@ -34,9 +33,14 @@ public:
 
     void fixedUpdate();
 
+    void fixedUpdateGPU();
+
     void unPause();
 
     void step();
+
+private:
+    Application& app;
 };
 
 
