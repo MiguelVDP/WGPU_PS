@@ -38,10 +38,16 @@ public:
     wgpu::Buffer m_mvpBuffer = nullptr;
 
     //Compute Buffers
-    wgpu::Buffer m_inputBuffer = nullptr;
-    wgpu::Buffer m_outputBuffer = nullptr;
+//    wgpu::Buffer m_inputBuffer = nullptr;
+//    wgpu::Buffer m_outputBuffer = nullptr;
     wgpu::Buffer m_mapBuffer = nullptr;
-    size_t m_computeBufferSize;
+    size_t m_computeBufferSize = 0;
+    //Instead of buffers we will be using textures
+    wgpu::Texture m_inputText = nullptr;
+    wgpu::Texture m_outputText = nullptr;
+    wgpu::TextureFormat m_computeTextFormat = wgpu::TextureFormat::Undefined;
+    wgpu::Extent3D m_computeTextSize;
+    wgpu::TextureView m_computeTextView= nullptr;
 
     std::vector<Object> &m_vertexData;
     int m_idxCount{};
@@ -115,7 +121,7 @@ private:
 
     void initComputeBindings();
 
-    void initComputeBuffers();
+    void initComputeBuffersAndTextures();
 
     void createComputePipeline();
 };

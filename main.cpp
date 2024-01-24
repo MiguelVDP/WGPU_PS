@@ -75,7 +75,7 @@ int main() {
     auto previousTime = currentTime;
     std::chrono::milliseconds lag(0);
 
-    app.onCompute();
+    app.onCompute(objectData[0].positions);
 
     while (app.isRunning()) {
 

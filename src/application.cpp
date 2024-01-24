@@ -29,7 +29,7 @@ bool Application::onInit(bool fullScreen) {
 
     createPipeline();
 
-    initComputeBuffers();
+    initComputeBuffersAndTextures();
 
     initComputeBindings();
 
@@ -61,7 +61,7 @@ void Application::onFrame() {
     }
     CommandEncoderDescriptor commandEncoderDesc;
     commandEncoderDesc.setDefault();
-    m_encoder = m_device.createCommandEncoder();
+    m_encoder = m_device.createCommandEncoder(commandEncoderDesc);
 
     //Create the renderPassDescriptor
     RenderPassDescriptor renderPassDesc;
@@ -161,8 +161,12 @@ void Application::onFinish() {
     m_depthBuffer.destroy();
     m_depthBuffer.release();
 
-    m_inputBuffer.release();
-    m_outputBuffer.release();
+//    m_inputBuffer.release();
+//    m_outputBuffer.release();
+    m_inputText.destroy();
+    m_inputText.release();
+    m_outputText.destroy();
+    m_outputText.release();
     m_computeBindGroup.release();
     m_computePipeline.release();
     m_computeBindGroupLayout.release();
@@ -259,6 +263,9 @@ bool Application::initWindowAndDevice(int width, int height) {
     deviceDesc.requiredLimits = &requiredLimits;
 
     //Compute limits
+    //Compute Texture limit
+    requiredLimits.limits.maxSampledTexturesPerShaderStage = 10;
+
     // The maximum value for respectively w, h and d
     requiredLimits.limits.maxComputeWorkgroupSizeX = 32;
     requiredLimits.limits.maxComputeWorkgroupSizeY = 1;
@@ -492,7 +499,20 @@ void Application::onCompute(VectorXR &p) {
     computePassDesc.timestampWriteCount = 0;
     computePassDesc.timestampWrites = nullptr;
 
-    m_queue.writeBuffer(m_inputBuffer, 0, p.data(), m_computeBufferSize * sizeof(float));
+    //Load the texture data (we will be needing a copyText and a source structures as it´s more complex than a buffer)
+    ImageCopyTexture copyText;
+    copyText.texture = m_inputText;
+    copyText.mipLevel = 0;
+    copyText.origin = {0, 0, 0}; //Offset
+    copyText.aspect = TextureAspect::All;
+
+    TextureDataLayout source;
+    source.offset = 0;
+    source.bytesPerRow = sizeof(float) * m_computeTextSize.width;
+    source.rowsPerImage = m_computeTextSize.height;
+
+    queue.writeTexture(copyText, p.data(), p.size() * sizeof(float), source, m_computeTextSize);
+
 
     m_computePass = encoder.beginComputePass(computePassDesc);
     m_computePass.setPipeline(m_computePipeline);
@@ -500,11 +520,22 @@ void Application::onCompute(VectorXR &p) {
     m_computePass.dispatchWorkgroups(64, 1, 1);
     m_computePass.end();
 
-    encoder.copyBufferToBuffer(m_outputBuffer, 0, m_mapBuffer, 0, m_computeBufferSize * sizeof(float));
+//    encoder.copyBufferToBuffer(m_outputBuffer, 0, m_mapBuffer, 0, m_computeBufferSize * sizeof(float));
+    //Now we want to copy the texture to our mapped buffer
+    copyText.texture = m_outputText; //We need an ImageCopyTexture as well
+
+    ImageCopyBuffer copyBuffer;
+    copyBuffer.buffer = m_mapBuffer;
+    copyBuffer.layout = source;
+
+    encoder.copyTextureToBuffer(copyText, copyBuffer, m_computeTextSize);
+
 
     CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
 
     queue.submit(commands);
+
+
 
     bool done = false;
     auto handle = m_mapBuffer.mapAsync(MapMode::Read, 0, m_computeBufferSize * sizeof(float), [&](BufferMapAsyncStatus status) {
@@ -518,13 +549,15 @@ void Application::onCompute(VectorXR &p) {
         done = true;
     });
 
-    while (!done) {
+
+         while (!done) {
 #ifdef WEBGPU_BACKEND_WGPU
         queue.submit(0, nullptr);
 #else
         m_instance.processEvents();
 #endif
     }
+
 
     // Clean up
 #if !defined(WEBGPU_BACKEND_WGPU)
@@ -541,13 +574,23 @@ void Application::initComputeBindings() {
 
     //Input Buffer
     m_computeBindingLayoutEntries[0].binding = 0;
-    m_computeBindingLayoutEntries[0].buffer.type = BufferBindingType::ReadOnlyStorage;
     m_computeBindingLayoutEntries[0].visibility = ShaderStage::Compute;
+    m_computeBindingLayoutEntries[0].texture.sampleType = TextureSampleType::UnfilterableFloat;
+    m_computeBindingLayoutEntries[0].texture.viewDimension = TextureViewDimension::_1D;
+    m_computeBindingLayoutEntries[0].texture.multisampled = false;
+//    m_computeBindingLayoutEntries[0].storageTexture.access = StorageTextureAccess::ReadWrite;
+//    m_computeBindingLayoutEntries[0].storageTexture.viewDimension = TextureViewDimension::_1D;
+//    m_computeBindingLayoutEntries[0].storageTexture.format = m_computeTextFormat;
 
     //Output Buffer
     m_computeBindingLayoutEntries[1].binding = 1;
-    m_computeBindingLayoutEntries[1].buffer.type = BufferBindingType::Storage;
     m_computeBindingLayoutEntries[1].visibility = ShaderStage::Compute;
+    m_computeBindingLayoutEntries[1].texture.sampleType = TextureSampleType::UnfilterableFloat;
+    m_computeBindingLayoutEntries[1].texture.viewDimension = TextureViewDimension::_1D;
+    m_computeBindingLayoutEntries[1].texture.multisampled = false;
+//    m_computeBindingLayoutEntries[1].storageTexture.access = StorageTextureAccess::ReadWrite;
+//    m_computeBindingLayoutEntries[1].storageTexture.viewDimension = TextureViewDimension::_1D;
+//    m_computeBindingLayoutEntries[1].storageTexture.format = m_computeTextFormat;
 
     //We create the layout group
     BindGroupLayoutDescriptor bindGroupLayoutDesc;
@@ -564,17 +607,24 @@ void Application::initComputeBindings() {
     //Now we create the bind group
     std::vector<BindGroupEntry> entries(2, Default);
 
+    //We will be needing a texture view Descriptor
+    TextureViewDescriptor textureViewDesc;
+    textureViewDesc.aspect = TextureAspect::All;
+    textureViewDesc.baseArrayLayer = 0;
+    textureViewDesc.arrayLayerCount = 1;
+    textureViewDesc.baseMipLevel = 0;
+    textureViewDesc.mipLevelCount = 1;
+    textureViewDesc.dimension = TextureViewDimension::_1D;
+    textureViewDesc.format = m_computeTextFormat;
+    m_computeTextView = m_inputText.createView(textureViewDesc);
+
     //Input Buffer
     entries[0].binding = 0;
-    entries[0].buffer = m_inputBuffer;
-    entries[0].offset = 0;
-    entries[0].size = m_inputBuffer.getSize();
+    entries[0].textureView = m_computeTextView;
 
     //Output Buffer
     entries[1].binding = 1;
-    entries[1].buffer = m_outputBuffer;
-    entries[1].offset = 0;
-    entries[1].size = m_outputBuffer.getSize();
+    entries[1].textureView = m_computeTextView;
 
     BindGroupDescriptor bindGroupDesc;
     bindGroupDesc.layout = m_computeBindGroupLayout;
@@ -584,25 +634,38 @@ void Application::initComputeBindings() {
 
 }
 
-void Application::initComputeBuffers() {
+void Application::initComputeBuffersAndTextures() {
+
     for (auto obj: m_vertexData) {
         m_computeBufferSize += obj.positions.size();
     }
+    m_computeTextSize = {static_cast<uint32_t>(m_computeBufferSize), 1, 1};
 
-    //Input Buffer
+    //Set a format for compute textures
+    m_computeTextFormat = TextureFormat::R32Float;
+
+    //Create a texture descriptor
+    TextureDescriptor textDesc;
+    textDesc.dimension = TextureDimension::_1D;
+    textDesc.format = m_computeTextFormat;
+    textDesc.mipLevelCount = 1;
+    textDesc.sampleCount = 1;
+    textDesc.size = m_computeTextSize;
+    textDesc.viewFormatCount = 0;
+    textDesc.viewFormats = nullptr;
+
+    //Input texture
+    textDesc.usage = TextureUsage::StorageBinding | TextureUsage::CopyDst;
+    m_inputText = m_device.createTexture(textDesc);
+
+    //Output texture
+    textDesc.usage = TextureUsage::StorageBinding | TextureUsage::CopySrc;
+    m_outputText = m_device.createTexture(textDesc);
+
+    //Map Buffer for reading the texture
     BufferDescriptor buffDesc;
     buffDesc.mappedAtCreation = false;
     buffDesc.size = m_computeBufferSize * sizeof(float);
-    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopyDst;
-    m_inputBuffer = m_device.createBuffer(buffDesc);
-
-    //Output Buffer
-    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopySrc;
-    m_outputBuffer = m_device.createBuffer(buffDesc);
-
-    //Map Buffer
     buffDesc.usage = BufferUsage::CopyDst | BufferUsage::MapRead;
     m_mapBuffer = m_device.createBuffer(buffDesc);
 }
-
-
