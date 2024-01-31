@@ -41,13 +41,17 @@ public:
 //    wgpu::Buffer m_inputBuffer = nullptr;
 //    wgpu::Buffer m_outputBuffer = nullptr;
     wgpu::Buffer m_mapBuffer = nullptr;
-    size_t m_computeBufferSize = 0;
+//    size_t m_computeInputSize = 0;
+//    size_t m_computeOutputSize = 0;
     //Instead of buffers we will be using textures
     wgpu::Texture m_inputText = nullptr;
     wgpu::Texture m_outputText = nullptr;
     wgpu::TextureFormat m_computeTextFormat = wgpu::TextureFormat::Undefined;
-    wgpu::Extent3D m_computeTextSize;
-    wgpu::TextureView m_computeTextView= nullptr;
+//    const wgpu::TextureFormat *m_constTextFormat = &m_computeTextFormat;
+    wgpu::Extent3D m_inputTextSize;
+    wgpu::Extent3D m_outputTextSize;
+    wgpu::TextureView m_inputTextView= nullptr;
+    wgpu::TextureView m_outputTextView= nullptr;
 
     std::vector<Object> &m_vertexData;
     int m_idxCount{};
@@ -60,12 +64,14 @@ public:
 //    PhysicManagerPBD &physicManagerPbd;
 
 private:
+    const size_t BYTES_PER_ROW_ALIGNMENT = 256;
     // Everything that is initialized in `onInit` and needed in `onFrame`.
     wgpu::Instance m_instance = nullptr;
     wgpu::Surface m_surface = nullptr;
     GLFWwindow *m_window = nullptr;
     wgpu::Adapter m_adapter = nullptr;
     wgpu::Device m_device = nullptr;
+    wgpu::Limits m_deviceLimits;
     std::unique_ptr<wgpu::ErrorCallback> m_errorCallbackHandle;
     wgpu::Queue m_queue = nullptr;
     wgpu::SwapChain m_swapChain = nullptr;
@@ -121,7 +127,7 @@ private:
 
     void initComputeBindings();
 
-    void initComputeBuffersAndTextures();
+    void initComputeBuffersAndTextures(VectorXR& p);
 
     void createComputePipeline();
 };
