@@ -6,13 +6,14 @@
 
 using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
 using Vector3R = Eigen::Matrix<float, 3, 1>;
-using Vectori = Eigen::Matrix<uint16_t , Eigen::Dynamic, 1>;
+using Vector16i = Eigen::Matrix<uint16_t , Eigen::Dynamic, 1>;
+using Vector32i = Eigen::Matrix<uint32_t , Eigen::Dynamic, 1>;
 
 class Object{
 public:
     //general
     VectorXR positions;
-    Vectori triangles; //Vector of triangle indices.
+    Vector16i triangles; //Vector of triangle indices.
 
     //Simulation
     VectorXR velocities;
@@ -22,7 +23,7 @@ public:
 
     //Render
     VectorXR renderNormals;
-    Vectori faces;
+    Vector16i faces;
 
     void computeNormals();
 

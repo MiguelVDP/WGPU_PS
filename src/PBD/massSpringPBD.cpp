@@ -11,18 +11,22 @@ void MassSpringPBD::initialize(int idx) {
     fillNodesAndSprings();
     index = idx;
     float nodeMass = mass / (float) nodes.size();
-    for (int i = 0; i < (int)nodes.size(); i++) {
+    for (int i = 0; i < (int) nodes.size(); i++) {
         nodes[i].initialize(index + 3 * i, nodeMass);
         //Lo de los fixers
     }
 
-    for (SpringPBD& spring: springs) {
+    //We set the stretch Stencil vector size
+    stretchStencils.resize((int) springs.size() * 2);
 
-            spring.initialize(stiffnessStretch);
+    for (int i = 0; i < (int) springs.size(); i++) {
+        springs[i].initialize(stiffnessStretch);
+        stretchStencils[i * 2] = springs[i].nodeA.index;
+        stretchStencils[i * 2 + 1] = springs[i].nodeB.index;
     }
 
     //
-    for(BendGroup& bendGroup : bendingGroups){
+    for (BendGroup &bendGroup: bendingGroups) {
         bendGroup.initialize();
     }
 }
@@ -49,7 +53,7 @@ void MassSpringPBD::fillNodesAndSprings() {
             int b = i + ((j + 1) % 3);
             int o = i + ((j + 2) % 3);
 
-            Edge edge = {(int)object.triangles[a], (int)object.triangles[b], (int)object.triangles[o]};
+            Edge edge = {(int) object.triangles[a], (int) object.triangles[b], (int) object.triangles[o]};
             auto it = edgeSet.insert(edge);
             if (!it.second) {
                 bCount++;
@@ -67,43 +71,43 @@ void MassSpringPBD::fillNodesAndSprings() {
 }
 
 void MassSpringPBD::getPosition(VectorXR &position) {
-    for(NodePBD& node : nodes){
+    for (NodePBD &node: nodes) {
         node.getPosition(position);
     }
 }
 
 void MassSpringPBD::setPosition(VectorXR &position) {
-    for(NodePBD& node : nodes){
+    for (NodePBD &node: nodes) {
         node.setPosition(position);
     }
 }
 
 void MassSpringPBD::getVelocity(VectorXR &velocity) {
-    for(NodePBD& node : nodes){
+    for (NodePBD &node: nodes) {
         node.getVelocity(velocity);
     }
 }
 
 void MassSpringPBD::setVelocity(VectorXR &velocity) {
-    for(NodePBD& node : nodes){
+    for (NodePBD &node: nodes) {
         node.setVelocity(velocity);
     }
 }
 
 void MassSpringPBD::getExtFore(VectorXR &force) {
-    for(NodePBD& node : nodes){
+    for (NodePBD &node: nodes) {
         node.getExtForce(force);
     }
 }
 
 void MassSpringPBD::getMass(MatrixXR &m) {
-    for(NodePBD& node : nodes){
+    for (NodePBD &node: nodes) {
         node.getMass(m);
     }
 }
 
 void MassSpringPBD::getMassInverse(MatrixXR &massInv) {
-    for(NodePBD& node : nodes){
+    for (NodePBD &node: nodes) {
         node.getMassInverse(massInv);
     }
 }
@@ -114,11 +118,38 @@ void MassSpringPBD::updateObjectState() {
 }
 
 void MassSpringPBD::projectConstraints(VectorXR &p) {
-    for(auto &spring : springs){
+    for (auto &spring: springs) {
         spring.projectDistanceConstraint(p);
     }
 
-    for(auto &bendGroup : bendingGroups){
+    for (auto &bendGroup: bendingGroups) {
         bendGroup.projectBendingConstraint(p);
     }
+}
+
+void MassSpringPBD::getStretchStencilIdx(Vector32i &stIdx) {
+    int prevSize = (int) stIdx.size();
+    int stencilCount = (int) stretchStencils.size();
+
+    //Resize the vector
+    stIdx.conservativeResize(prevSize + stencilCount);
+
+    //Assign the new segment a value.
+    stIdx.tail(stencilCount) = stretchStencils;
+
+}
+
+void MassSpringPBD::getStretchConstraintData(VectorXR &data) {
+    int prevSize = (int) data.size();
+    int dataCount = (int) springs.size() * 3;
+
+    //Resize the vector
+    data.conservativeResize(prevSize + dataCount);
+
+    for (int i = 0; i < (int) springs.size(); i++) {
+        data[prevSize + (i * 3)] = springs[i].length0;
+        data[prevSize + ((i * 3) + 1)] = springs[i].nodeA.massInv;
+        data[prevSize + ((i * 3) + 2)] = springs[i].nodeB.massInv;
+    }
+
 }

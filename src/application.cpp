@@ -155,15 +155,14 @@ void Application::onFinish() {
     m_depthBuffer.destroy();
     m_depthBuffer.release();
 
-//    m_inputBuffer.release();
-//    m_outputBuffer.release();
-    m_inputText.destroy();
-    m_inputText.release();
-    m_outputText.destroy();
-    m_outputText.release();
-    m_computeBindGroup.release();
-    m_computePipeline.release();
-    m_computeBindGroupLayout.release();
+    if(m_inputText != nullptr)  m_inputText.release();
+    if(m_outputText != nullptr)  m_outputText.release();
+    if(m_idxText != nullptr)  m_idxText.release();
+    if(m_dataText != nullptr)  m_dataText.release();
+    if(m_computeSizeBuff != nullptr)  m_computeSizeBuff.release();
+    if(m_computeBindGroup != nullptr)  m_computeBindGroup.release();
+    if(m_computePipeline != nullptr)  m_computePipeline.release();
+    if(m_computeBindGroupLayout != nullptr)  m_computeBindGroupLayout.release();
 }
 
 bool Application::initWindowAndDevice(int width, int height) {
@@ -251,8 +250,8 @@ bool Application::initWindowAndDevice(int width, int height) {
     requiredLimits.limits.maxStorageBuffersPerShaderStage = 2;
     requiredLimits.limits.maxStorageBufferBindingSize = 64 * sizeof(float);
     // For the depth buffer, we enable textures (up to the size of the window):
-    requiredLimits.limits.maxTextureDimension1D = 2160;
-    requiredLimits.limits.maxTextureDimension2D = 3840;
+    requiredLimits.limits.maxTextureDimension1D = supportedLimits.limits.maxTextureDimension1D;
+    requiredLimits.limits.maxTextureDimension2D = supportedLimits.limits.maxTextureDimension2D;
     requiredLimits.limits.maxTextureArrayLayers = 1;
     deviceDesc.requiredLimits = &requiredLimits;
 
@@ -477,10 +476,16 @@ void Application::createComputePipeline() {
     m_computePipeline = m_device.createComputePipeline(computePipelineDesc);
 }
 
-void Application::onCompute(VectorXR &p) {
+void Application::onCompute(VectorXR &p, Vector32i &id, VectorXR &data) {
+
+//    std::cout << "----------------------------- \n P:" << std::endl;
+//    for (int i = 0; i < p.size(); i += 3) {
+//        std::cout << "(" << p[i] << ", " << p[i + 1] << ", " << p[i + 2] << ")" << std::endl;
+//    }
+//    std::cout << std::endl;
 
     //Initialize the compute pipeline
-    initComputeBuffersAndTextures(p);
+    initComputeBuffersAndTextures(p, id, data);
 
     initComputeBindings();
 
@@ -509,7 +514,20 @@ void Application::onCompute(VectorXR &p) {
 
     queue.writeTexture(inCopyText, p.data(), p.size() * sizeof(float), source, m_inputTextSize);
 
+    inCopyText.texture = m_idxText;
+    source.bytesPerRow = sizeof(uint32_t) * m_idxTextSize.width;
+    source.rowsPerImage = m_idxTextSize.height;
 
+    queue.writeTexture(inCopyText, id.data(), id.size() * sizeof(uint32_t), source, m_idxTextSize);
+
+    inCopyText.texture = m_dataText;
+    source.bytesPerRow = sizeof(float ) * m_dataTextSize.width;
+    source.rowsPerImage = m_dataTextSize.height;
+
+    queue.writeTexture(inCopyText, data.data(), data.size() * sizeof(float ), source, m_dataTextSize);
+
+    uint32_t constraintCount = id.size()/2;
+    queue.writeBuffer(m_computeSizeBuff, 0, &constraintCount, sizeof(uint32_t));
     m_computePass = encoder.beginComputePass(computePassDesc);
     m_computePass.setPipeline(m_computePipeline);
     m_computePass.setBindGroup(0, m_computeBindGroup, 0, nullptr);
@@ -541,10 +559,9 @@ void Application::onCompute(VectorXR &p) {
     [&](BufferMapAsyncStatus status) {
         if (status == BufferMapAsyncStatus::Success) {
             const auto *output = (const float *) m_mapBuffer.getConstMappedRange(0,p.size() * sizeof(float));
-                for (int i = 0; i < p.size(); i++) {
-                    std::cout << "p " << p[i] << " became " << output[i] << std::endl;
-                }
-                m_mapBuffer.unmap();
+            Eigen::Map<const VectorXR> newP(output, p.size());
+            p = newP;
+            m_mapBuffer.unmap();
         }
         done = true;
     });
@@ -570,21 +587,41 @@ void Application::onCompute(VectorXR &p) {
 
 void Application::initComputeBindings() {
     //We set the amount of layout entries
-    m_computeBindingLayoutEntries.resize(2);
+    m_computeBindingLayoutEntries.resize(5);
 
-    //Input Buffer
+    //Input texture
     m_computeBindingLayoutEntries[0].binding = 0;
     m_computeBindingLayoutEntries[0].visibility = ShaderStage::Compute;
     m_computeBindingLayoutEntries[0].texture.sampleType = TextureSampleType::UnfilterableFloat;
     m_computeBindingLayoutEntries[0].texture.viewDimension = TextureViewDimension::_1D;
     m_computeBindingLayoutEntries[0].texture.multisampled = false;
 
-    //Output Buffer
+    //Output texture
     m_computeBindingLayoutEntries[1].binding = 1;
     m_computeBindingLayoutEntries[1].visibility = ShaderStage::Compute;
     m_computeBindingLayoutEntries[1].storageTexture.access = StorageTextureAccess::WriteOnly;
     m_computeBindingLayoutEntries[1].storageTexture.viewDimension = TextureViewDimension::_1D;
     m_computeBindingLayoutEntries[1].storageTexture.format = m_computeTextFormat;
+
+    //Index texture
+    m_computeBindingLayoutEntries[2].binding = 2;
+    m_computeBindingLayoutEntries[2].visibility = ShaderStage::Compute;
+    m_computeBindingLayoutEntries[2].texture.sampleType = TextureSampleType::Uint;
+    m_computeBindingLayoutEntries[2].texture.viewDimension = TextureViewDimension::_1D;
+    m_computeBindingLayoutEntries[2].texture.multisampled = false;
+
+    //Data texture
+    m_computeBindingLayoutEntries[3].binding = 3;
+    m_computeBindingLayoutEntries[3].visibility = ShaderStage::Compute;
+    m_computeBindingLayoutEntries[3].texture.sampleType = TextureSampleType::UnfilterableFloat;
+    m_computeBindingLayoutEntries[3].texture.viewDimension = TextureViewDimension::_1D;
+    m_computeBindingLayoutEntries[3].texture.multisampled = false;
+
+    //Data texture
+    m_computeBindingLayoutEntries[4].binding = 4;
+    m_computeBindingLayoutEntries[4].visibility = ShaderStage::Compute;
+    m_computeBindingLayoutEntries[4].buffer.type = BufferBindingType::Uniform;
+    m_computeBindingLayoutEntries[4].buffer.minBindingSize = sizeof(uint32_t);
 
     //We create the layout group
     BindGroupLayoutDescriptor bindGroupLayoutDesc;
@@ -599,7 +636,7 @@ void Application::initComputeBindings() {
     m_computePipelineLayout = m_device.createPipelineLayout(pipelineLayoutDesc);
 
     //Now we create the bind group
-    std::vector<BindGroupEntry> entries(2, Default);
+    std::vector<BindGroupEntry> entries(5, Default);
 
     //We will be needing a texture view Descriptor
     TextureViewDescriptor textureViewDesc;
@@ -612,6 +649,10 @@ void Application::initComputeBindings() {
     textureViewDesc.format = m_computeTextFormat;
     m_inputTextView = m_inputText.createView(textureViewDesc);
     m_outputTextView = m_outputText.createView(textureViewDesc);
+    m_dataTextView = m_dataText.createView(textureViewDesc);
+
+    textureViewDesc.format = m_computeIdxTextFormat;
+    m_idxTextView = m_idxText.createView(textureViewDesc);
 
     //Input Buffer
     entries[0].binding = 0;
@@ -621,6 +662,20 @@ void Application::initComputeBindings() {
     entries[1].binding = 1;
     entries[1].textureView = m_outputTextView;
 
+    //Output Buffer
+    entries[2].binding = 2;
+    entries[2].textureView = m_idxTextView;
+
+    //Output Buffer
+    entries[3].binding = 3;
+    entries[3].textureView = m_dataTextView;
+
+    //Output Buffer
+    entries[4].binding = 4;
+    entries[4].buffer = m_computeSizeBuff;
+    entries[4].size = sizeof(uint32_t);
+    entries[4].offset = 0;
+
     BindGroupDescriptor bindGroupDesc;
     bindGroupDesc.layout = m_computeBindGroupLayout;
     bindGroupDesc.entryCount = entries.size();
@@ -629,11 +684,10 @@ void Application::initComputeBindings() {
 
 }
 
-void Application::initComputeBuffersAndTextures(VectorXR &p) {
+void Application::initComputeBuffersAndTextures(VectorXR &p, Vector32i &id, VectorXR &data) {
 
     //Input Texture size
     size_t inputSize = p.size();
-//    m_computeInputSize = p.size();
     m_inputTextSize = {static_cast<uint32_t>(inputSize), 1, 1};
 
     //Output Texture size
@@ -644,9 +698,18 @@ void Application::initComputeBuffersAndTextures(VectorXR &p) {
     size_t outputSize = inputSize + buffSizeRemainder;
     m_outputTextSize = {static_cast<uint32_t>(outputSize), 1, 1};
 
+    //Index texture size
+    size_t idxSize = id.size();
+    m_idxTextSize = {static_cast<uint32_t>(idxSize), 1, 1 };
+
+    //Data texture size
+    size_t dataSize = data.size();
+    m_dataTextSize = {static_cast<uint32_t>(dataSize), 1, 1};
+
 
     //Set a format for compute textures
     m_computeTextFormat = TextureFormat::R32Float;
+    m_computeIdxTextFormat = TextureFormat::R32Uint;
 
     //Create a texture descriptor
     TextureDescriptor textDesc;
@@ -662,13 +725,31 @@ void Application::initComputeBuffersAndTextures(VectorXR &p) {
     textDesc.usage = TextureUsage::TextureBinding | TextureUsage::CopyDst;
     m_inputText = m_device.createTexture(textDesc);
 
+    //Data texture
+    textDesc.size = m_dataTextSize;
+    m_dataText = m_device.createTexture(textDesc);
+
     //Output texture
     textDesc.size = m_outputTextSize;
     textDesc.usage = TextureUsage::StorageBinding | TextureUsage::CopySrc;
     m_outputText = m_device.createTexture(textDesc);
 
+    //Index texture
+    textDesc.size = m_idxTextSize;
+    textDesc.format = m_computeIdxTextFormat;
+    textDesc.usage = TextureUsage::TextureBinding | TextureUsage::CopyDst;
+    m_idxText = m_device.createTexture(textDesc);
+
     //Map Buffer for reading the texture
     BufferDescriptor buffDesc;
+
+    //Compute size buffer
+    buffDesc.size = sizeof(uint32_t);
+    buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
+    buffDesc.mappedAtCreation = false;
+    m_computeSizeBuff = m_device.createBuffer(buffDesc);
+
+    //Map Buffer
     buffDesc.mappedAtCreation = false;
     buffDesc.size = outputSize * sizeof(float);
     buffDesc.usage = BufferUsage::CopyDst | BufferUsage::MapRead;

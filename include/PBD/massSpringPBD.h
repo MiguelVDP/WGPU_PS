@@ -17,6 +17,7 @@ class MassSpringPBD : public SimulablePBD {
     std::vector<NodePBD> nodes;
     std::vector<SpringPBD> springs;
     std::vector<BendGroup> bendingGroups;
+    Vector32i stretchStencils;
 
     float mass{};
     float stiffnessStretch{};
@@ -25,8 +26,6 @@ class MassSpringPBD : public SimulablePBD {
 
 public:
     MassSpringPBD(float mass, float stiffnessStretch, float stiffnessBend, PhysicManagerPBD &manager, Object &object);
-
-private:
 
     void initialize(int i) override;
 
@@ -50,11 +49,13 @@ private:
 
     void projectConstraints(VectorXR &p) override;
 
+    void getStretchStencilIdx(Vector32i &stIdx) override;
+
+    void getStretchConstraintData(VectorXR &data) override;
+
 private:
 
     ~MassSpringPBD() override = default;
-
-private:
 
     PhysicManagerPBD &manager;
     Object &object;

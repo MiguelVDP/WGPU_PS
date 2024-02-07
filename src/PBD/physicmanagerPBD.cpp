@@ -79,12 +79,16 @@ void PhysicManagerPBD::fixedUpdateGPU() {
     VectorXR p(numDoFs); //Predicted position vector
     VectorXR v(numDoFs); //Velocity vector
     VectorXR fExt(numDoFs); //External forces vector
+    Vector32i stretchStencils;
+    VectorXR stretchData;
     fExt.setZero();
 
     for (auto &sim: simObjs) {
         sim->getPosition(x);
         sim->getVelocity(v);
         sim->getExtFore(fExt);
+        sim->getStretchStencilIdx(stretchStencils);
+        sim->getStretchConstraintData(stretchData);
     }
 
     //Compute velocity according to external forces
@@ -95,19 +99,18 @@ void PhysicManagerPBD::fixedUpdateGPU() {
     //TODO Collisions
 
     //Apply constraints
-    for(int it = 0 ; it < simIterations; it++){
-        for (auto &sim: simObjs) {
-            sim->projectConstraints(p);
-        }
+    //Stretch constraint
+    for(int i = 0; i < simIterations; i++) {
+        app.onCompute(p, stretchStencils, stretchData);
     }
 
     //Correct velocities
     v = (p - x) / timeStep;
 
-//    std::cout << "----------------------------- \n Vf:" << std::endl;
-//    for (int i = 0; i < p.size(); i += 3) {
-//        std::cout << "(" << v[i] << ", " << v[i + 1] << ", " << v[i + 2] << ")" << std::endl;
-//    }
+    std::cout << "----------------------------- \n P:" << std::endl;
+    for (int i = 0; i < p.size(); i += 3) {
+        std::cout << "(" << p[i] << ", " << p[i + 1] << ", " << p[i + 2] << ")" << std::endl;
+    }
 
     for (auto &sim: simObjs) {
         sim->setVelocity(v);

@@ -24,7 +24,7 @@ public:
     // A function called only once at the very end.
     void onFinish();
 
-    void onCompute(VectorXR& p);
+    void onCompute(VectorXR &p, Vector32i &id, VectorXR  &data);
 
     bool isRunning() { return !glfwWindowShouldClose(m_window); }
 
@@ -38,20 +38,23 @@ public:
     wgpu::Buffer m_mvpBuffer = nullptr;
 
     //Compute Buffers
-//    wgpu::Buffer m_inputBuffer = nullptr;
-//    wgpu::Buffer m_outputBuffer = nullptr;
     wgpu::Buffer m_mapBuffer = nullptr;
-//    size_t m_computeInputSize = 0;
-//    size_t m_computeOutputSize = 0;
+    wgpu::Buffer m_computeSizeBuff = nullptr;
     //Instead of buffers we will be using textures
     wgpu::Texture m_inputText = nullptr;
+    wgpu::Texture m_idxText = nullptr;
     wgpu::Texture m_outputText = nullptr;
+    wgpu::Texture m_dataText = nullptr;
     wgpu::TextureFormat m_computeTextFormat = wgpu::TextureFormat::Undefined;
-//    const wgpu::TextureFormat *m_constTextFormat = &m_computeTextFormat;
+    wgpu::TextureFormat m_computeIdxTextFormat = wgpu::TextureFormat::Undefined;
     wgpu::Extent3D m_inputTextSize;
+    wgpu::Extent3D m_idxTextSize;
     wgpu::Extent3D m_outputTextSize;
-    wgpu::TextureView m_inputTextView= nullptr;
-    wgpu::TextureView m_outputTextView= nullptr;
+    wgpu::Extent3D m_dataTextSize;
+    wgpu::TextureView m_inputTextView = nullptr;
+    wgpu::TextureView m_idxTextView = nullptr;
+    wgpu::TextureView m_outputTextView = nullptr;
+    wgpu::TextureView m_dataTextView = nullptr;
 
     std::vector<Object> &m_vertexData;
     int m_idxCount{};
@@ -127,7 +130,7 @@ private:
 
     void initComputeBindings();
 
-    void initComputeBuffersAndTextures(VectorXR& p);
+    void initComputeBuffersAndTextures(VectorXR &p, Vector32i &id, VectorXR &data);
 
     void createComputePipeline();
 };

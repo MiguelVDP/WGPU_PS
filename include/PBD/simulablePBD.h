@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 
 using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
+using Vector32i = Eigen::Matrix<uint32_t , Eigen::Dynamic, 1>;
 using MatrixXR = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>;
 
 class PhysicManagerPBD;
@@ -65,6 +66,16 @@ public:
     /// Correct the given predicted positions in order to solve the constraints
     /// </summary>
     virtual void projectConstraints(VectorXR& p) = 0;
+
+    /// <summary>
+    /// Return the stretch constraint stencil indices
+    /// </summary>
+    virtual void getStretchStencilIdx(Vector32i& stIdx) = 0;
+
+    /// <summary>
+    /// Return the stretch constraint data
+    /// </summary>
+    virtual void getStretchConstraintData(VectorXR& data) = 0;
 
     virtual ~SimulablePBD() = default;
 };

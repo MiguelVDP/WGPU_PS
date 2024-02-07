@@ -58,14 +58,6 @@ void Object::localToWorld() {
         vert = modelMat * vert;
         positions.segment<3>(v) = vert.segment<3>(0);
     }
-
-    std::cout << "----------------------------- \n Vf:" << std::endl;
-    for (int i = 0; i < positions.size(); i += 3) {
-        std::cout << "(" << positions[i] << ", " << positions[i + 1] << ", " << positions[i + 2] << ")" << std::endl;
-    }
-
-    std::cout<< "end";
-
 }
 
 
