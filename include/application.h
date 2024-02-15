@@ -40,21 +40,10 @@ public:
     //Compute Buffers
     wgpu::Buffer m_mapBuffer = nullptr;
     wgpu::Buffer m_computeSizeBuff = nullptr;
-    //Instead of buffers we will be using textures
-    wgpu::Texture m_inputText = nullptr;
-    wgpu::Texture m_idxText = nullptr;
-    wgpu::Texture m_outputText = nullptr;
-    wgpu::Texture m_dataText = nullptr;
-    wgpu::TextureFormat m_computeTextFormat = wgpu::TextureFormat::Undefined;
-    wgpu::TextureFormat m_computeIdxTextFormat = wgpu::TextureFormat::Undefined;
-    wgpu::Extent3D m_inputTextSize;
-    wgpu::Extent3D m_idxTextSize;
-    wgpu::Extent3D m_outputTextSize;
-    wgpu::Extent3D m_dataTextSize;
-    wgpu::TextureView m_inputTextView = nullptr;
-    wgpu::TextureView m_idxTextView = nullptr;
-    wgpu::TextureView m_outputTextView = nullptr;
-    wgpu::TextureView m_dataTextView = nullptr;
+    wgpu::Buffer m_inputBuffer = nullptr;
+    wgpu::Buffer m_dataBuffer = nullptr;
+    wgpu::Buffer m_outputBuffer = nullptr;
+    wgpu::Buffer m_idxBuffer = nullptr;
 
     std::vector<Object> &m_vertexData;
     int m_idxCount{};
@@ -128,9 +117,9 @@ private:
 
     void onKeyPressed(int key, int action);
 
-    void initComputeBindings();
+    void initComputeBindings(size_t inputSize, size_t idxSize, size_t dataSize);
 
-    void initComputeBuffersAndTextures(VectorXR &p, Vector32i &id, VectorXR &data);
+    void initComputeBuffersAndTextures(size_t inputSize, size_t idxSize, size_t dataSize);
 
     void createComputePipeline();
 };
