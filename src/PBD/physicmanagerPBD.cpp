@@ -100,17 +100,38 @@ void PhysicManagerPBD::fixedUpdateGPU() {
 
     //Apply constraints
     //Stretch constraint
-    for(int i = 0; i < simIterations; i++) {
-        app.onCompute(p, stretchStencils, stretchData);
-    }
+
+    Vector32i testStencils = Vector32i (4);
+    VectorXR testData = VectorXR(6);
+
+//    for(int i = 0; i < simIterations; i++) {
+
+        testStencils.segment<2>(0) = stretchStencils.segment<2>(0 * 2);
+        testStencils.segment<2>(2) = stretchStencils.segment<2>(3 * 2);
+        testData.segment<3>(0) = stretchData.segment<3>(0 * 3);
+        testData.segment<3>(3) = stretchData.segment<3>(3 * 3);
+        app.onCompute(p, testStencils, testData);
+
+        testStencils.segment<2>(0) = stretchStencils.segment<2>(1 * 2);
+        testStencils.segment<2>(2) = stretchStencils.segment<2>(4 * 2);
+        testData.segment<3>(0) = stretchData.segment<3>(1 * 3);
+        testData.segment<3>(3) = stretchData.segment<3>(4 * 3);
+        app.onCompute(p, testStencils, testData);
+
+        testStencils.segment<2>(0) = stretchStencils.segment<2>(2 * 2);
+        testStencils.segment<2>(2) = stretchStencils.segment<2>(5 * 2);
+        testData.segment<3>(0) = stretchData.segment<3>(2 * 3);
+        testData.segment<3>(3) = stretchData.segment<3>(5 * 3);
+        app.onCompute(p, testStencils, testData);
+//    }
 
     //Correct velocities
     v = (p - x) / timeStep;
 
-    std::cout << "----------------------------- \n P:" << std::endl;
-    for (int i = 0; i < p.size(); i += 3) {
-        std::cout << "(" << p[i] << ", " << p[i + 1] << ", " << p[i + 2] << ")" << std::endl;
-    }
+//    std::cout << "----------------------------- \n Pout:" << std::endl;
+//    for (int i = 0; i < p.size(); i += 3) {
+//        std::cout << "(" << p[i] << ", " << p[i + 1] << ", " << p[i + 2] << ")" << std::endl;
+//    }
 
     for (auto &sim: simObjs) {
         sim->setVelocity(v);

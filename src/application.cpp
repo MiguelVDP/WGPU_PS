@@ -255,7 +255,7 @@ bool Application::initWindowAndDevice(int width, int height) {
 
     //Compute limits
     //Compute Buffers limits
-    requiredLimits.limits.maxStorageBuffersPerShaderStage = 4;
+    requiredLimits.limits.maxStorageBuffersPerShaderStage = 5;
     requiredLimits.limits.maxStorageBufferBindingSize = supportedLimits.limits.maxStorageBufferBindingSize;
 
     //Compute Texture limit
@@ -471,11 +471,27 @@ Application::Application(std::vector<Object> &vData) :
 
 void Application::onCompute(VectorXR &p, Vector32i &id, VectorXR &data) {
 
-//    std::cout << "----------------------------- \n P:" << std::endl;
+//    std::cout << "----------------------------- \n Pin:" << std::endl;
 //    for (int i = 0; i < p.size(); i += 3) {
 //        std::cout << "(" << p[i] << ", " << p[i + 1] << ", " << p[i + 2] << ")" << std::endl;
 //    }
 //    std::cout << std::endl;
+//
+//    std::cout << "----------------------------- \n ID:" << std::endl;
+//    for (int i = 0; i < id.size(); i += 2) {
+//        std::cout << "(" << id[i] << ", " << id[i + 1] << ")" << std::endl;
+//    }
+//    std::cout << std::endl;
+//
+//    std::cout << "----------------------------- \n Data:" << std::endl;
+//    for (int i = 0; i < data.size(); i += 3) {
+//        std::cout << "(" << data[i] << ", " << data[i + 1] << ", " << data[i + 2] << ")" << std::endl;
+//    }
+//    std::cout << std::endl;
+
+    size_t input_size = p.size();
+    size_t idx_size = id.size();
+    size_t data_size = data.size();
 
     //Initialize the compute pipeline
     initComputeBuffersAndTextures(input_size, idx_size, data_size);
@@ -494,18 +510,15 @@ void Application::onCompute(VectorXR &p, Vector32i &id, VectorXR &data) {
     computePassDesc.timestampWrites = nullptr;
 
 
-    queue.writeBuffer(m_inputBuffer, 0, p.data(), data_size * sizeof(float));
+    queue.writeBuffer(m_inputBuffer, 0, p.data(), input_size * sizeof(float));
     queue.writeBuffer(m_idxBuffer, 0, id.data(), idx_size * sizeof(uint32_t));
     queue.writeBuffer(m_dataBuffer, 0, data.data(), data_size * sizeof(float));
 
-    VectorXR zero = VectorXR::Zero(p.size());
-    queue.writeBuffer(m_outputBuffer, 0, zero.data(), p.size() * sizeof(float));
+//    Vector32i zero = Vector32i ::Zero(p.size());
+    queue.writeBuffer(m_outputBuffer, 0, p.data(), p.size() * sizeof(float ));
 
-//    uint32_t constraintCount = id.size()/2;
-//    TestStruct testStruct = {};
-//    testStruct.size = constraintCount;
-//    testStruct.test = 0;
-//    queue.writeBuffer(m_computeSizeBuff, 0, &testStruct, sizeof(TestStruct));
+    uint32_t constraintCount = id.size()/2;
+    queue.writeBuffer(m_computeSizeBuff, 0, &constraintCount, sizeof(uint32_t));
 
     m_computePass = encoder.beginComputePass(computePassDesc);
     m_computePass.setPipeline(m_computePipeline);
@@ -514,18 +527,22 @@ void Application::onCompute(VectorXR &p, Vector32i &id, VectorXR &data) {
     m_computePass.end();
 
     //Now we want to copy the texture to our mapped buffer
-    encoder.copyBufferToBuffer(m_outputBuffer, 0, m_mapBuffer, 0, p.size() * sizeof(float));
+    encoder.copyBufferToBuffer(m_outputBuffer, 0, m_mapBuffer, 0, p.size() * sizeof(float ));
     CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
 
     queue.submit(commands);
 
     bool done = false;
-    auto handle = m_mapBuffer.mapAsync(MapMode::Read, 0, p.size() * sizeof(float),
+    auto handle = m_mapBuffer.mapAsync(MapMode::Read, 0, p.size() * sizeof(uint32_t ),
     [&](BufferMapAsyncStatus status) {
         if (status == BufferMapAsyncStatus::Success) {
-            const auto *output = (const float *) m_mapBuffer.getConstMappedRange(0,p.size() * sizeof(float));
+            const auto *output = (const float *) m_mapBuffer.getConstMappedRange(0,p.size() * sizeof(uint32_t ));
             Eigen::Map<const VectorXR> newP(output, p.size());
             p = newP;
+//            std::cout << "----------------------------- \n Pout:" << std::endl;
+//            for (int i = 0; i < p.size(); i += 3) {
+//                std::cout << "(" << p[i] << ", " << p[i + 1] << ", " << p[i + 2] << ")" << std::endl;
+//            }
             m_mapBuffer.unmap();
         }
         done = true;
@@ -561,7 +578,7 @@ void Application::createComputePipeline() {
 
 void Application::initComputeBindings(size_t inputSize, size_t idxSize, size_t dataSize) {
     //We set the amount of layout entries
-    m_computeBindingLayoutEntries.resize(4);
+    m_computeBindingLayoutEntries.resize(5);
 
     //Input Buffer
     m_computeBindingLayoutEntries[0].binding = 0;
@@ -591,12 +608,11 @@ void Application::initComputeBindings(size_t inputSize, size_t idxSize, size_t d
     m_computeBindingLayoutEntries[3].buffer.type = BufferBindingType::ReadOnlyStorage;
     m_computeBindingLayoutEntries[3].buffer.hasDynamicOffset = false;
 
-//    //Data Size Buffer
-//    m_computeBindingLayoutEntries[4].binding = 4;
-//    m_computeBindingLayoutEntries[4].visibility = ShaderStage::Compute;
-//    m_computeBindingLayoutEntries[4].buffer.type = BufferBindingType::Storage;
-////    m_computeBindingLayoutEntries[4].buffer.minBindingSize = sizeof(uint32_t);
-//    m_computeBindingLayoutEntries[4].buffer.minBindingSize = sizeof(TestStruct);
+    //Data Size Buffer
+    m_computeBindingLayoutEntries[4].binding = 4;
+    m_computeBindingLayoutEntries[4].visibility = ShaderStage::Compute;
+    m_computeBindingLayoutEntries[4].buffer.type = BufferBindingType::ReadOnlyStorage;
+    m_computeBindingLayoutEntries[4].buffer.minBindingSize = sizeof(uint32_t);
 
     //We create the layout group
     BindGroupLayoutDescriptor bindGroupLayoutDesc;
@@ -611,7 +627,7 @@ void Application::initComputeBindings(size_t inputSize, size_t idxSize, size_t d
     m_computePipelineLayout = m_device.createPipelineLayout(pipelineLayoutDesc);
 
     //Now we create the bind group
-    std::vector<BindGroupEntry> entries(4, Default);
+    std::vector<BindGroupEntry> entries(5, Default);
 
     //Input Buffer
     entries[0].binding = 0;
@@ -622,7 +638,7 @@ void Application::initComputeBindings(size_t inputSize, size_t idxSize, size_t d
     //Output Buffer
     entries[1].binding = 1;
     entries[1].buffer = m_outputBuffer;
-    entries[1].size = sizeof(float) * inputSize;
+    entries[1].size = sizeof(float ) * inputSize;
     entries[1].offset = 0;
 
     //Idx Buffer
@@ -637,12 +653,11 @@ void Application::initComputeBindings(size_t inputSize, size_t idxSize, size_t d
     entries[3].size = sizeof(float) * dataSize;
     entries[3].offset = 0;
 
-//    //Size Buffer
-//    entries[4].binding = 4;
-//    entries[4].buffer = m_computeSizeBuff;
-////    entries[4].size = sizeof(uint32_t);
-//    entries[4].size = sizeof(TestStruct);
-//    entries[4].offset = 0;
+    //Size Buffer
+    entries[4].binding = 4;
+    entries[4].buffer = m_computeSizeBuff;
+    entries[4].size = sizeof(uint32_t);
+    entries[4].offset = 0;
 
     BindGroupDescriptor bindGroupDesc;
     bindGroupDesc.layout = m_computeBindGroupLayout;
@@ -658,15 +673,14 @@ void Application::initComputeBuffersAndTextures(size_t inputSize, size_t idxSize
     BufferDescriptor buffDesc;
 
     //Compute size buffer
-////    buffDesc.size = sizeof(uint32_t);
-//    buffDesc.size = sizeof(TestStruct);
-//    buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage | BufferUsage::CopySrc;
-//    buffDesc.mappedAtCreation = false;
-//    m_computeSizeBuff = m_device.createBuffer(buffDesc);
+    buffDesc.size = sizeof(uint32_t);
+    buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage;
+    buffDesc.mappedAtCreation = false;
+    m_computeSizeBuff = m_device.createBuffer(buffDesc);
 
     //Map Buffer
     buffDesc.mappedAtCreation = false;
-    buffDesc.size = inputSize * sizeof(float);
+    buffDesc.size = inputSize * sizeof(uint32_t );
     buffDesc.usage = BufferUsage::CopyDst | BufferUsage::MapRead;
     m_mapBuffer = m_device.createBuffer(buffDesc);
 

@@ -2,11 +2,11 @@
 @group(0) @binding(1) var<storage, read_write> outputBuffer: array<f32>;
 @group(0) @binding(2) var<storage, read> idxBuffer: array<u32>;
 @group(0) @binding(3) var<storage, read> dataBuffer: array<f32>;
+@group(0) @binding(4) var<storage, read> dataSize: u32;
 
 @compute @workgroup_size(32)
 fn computeStuff(@builtin(global_invocation_id) id: vec3<u32>) {
 
-    var dataSize = (arrayLength(&idxBuffer) / 2u);
     if(id.x >= dataSize){
         return;
     }
@@ -21,8 +21,8 @@ fn computeStuff(@builtin(global_invocation_id) id: vec3<u32>) {
     var nodeA = vec3<f32>(Ax, Ay, Az);
 
     let Bx = inputBuffer[idxB];
-    let By = inputBuffer[idxB + 2u];
-    let Bz = inputBuffer[idxB + 1u];
+    let By = inputBuffer[idxB + 1u];
+    let Bz = inputBuffer[idxB + 2u];
     var nodeB = vec3<f32>(Bx, By, Bz);
 
     //Load the stencil data
@@ -41,9 +41,9 @@ fn computeStuff(@builtin(global_invocation_id) id: vec3<u32>) {
     var correctionB = wB * correction;
 
     //Load the solution
-    outputBuffer[idxA] += correctionA.x;
-    outputBuffer[idxA + 1u] += correctionA.y;
-    outputBuffer[idxA + 2u] += correctionA.z;
+    outputBuffer[idxA] -= correctionA.x;
+    outputBuffer[idxA + 1u] -= correctionA.y;
+    outputBuffer[idxA + 2u] -= correctionA.z;
 
     outputBuffer[idxB] += correctionB.x;
     outputBuffer[idxB + 1u] += correctionB.y;

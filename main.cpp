@@ -75,6 +75,7 @@ int main() {
     auto previousTime = currentTime;
     std::chrono::milliseconds lag(0);
 
+//    physicManager.fixedUpdateGPU();
 
     while (app.isRunning()) {
 
@@ -89,7 +90,7 @@ int main() {
         //////    FIXED UPDATE    //////
         while (lag >= fixedTimeStep) {
             // Perform fixed update tasks here
-            physicManager.fixedUpdate();
+            physicManager.fixedUpdateGPU();
 
             // Decrease lag by the fixed time step
             lag -= fixedTimeStep;
