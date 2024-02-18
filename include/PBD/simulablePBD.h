@@ -67,15 +67,24 @@ public:
     /// </summary>
     virtual void projectConstraints(VectorXR& p) = 0;
 
+#pragma region stretch_constraint
     /// <summary>
     /// Return the stretch constraint stencil indices
     /// </summary>
-    virtual void getStretchStencilIdx(Vector32i& stIdx) = 0;
+//    virtual void getStretchStencilIdx(Vector32i& stIdx) = 0;
 
     /// <summary>
     /// Return the stretch constraint data
     /// </summary>
-    virtual void getStretchConstraintData(VectorXR& data) = 0;
+    virtual void getStretchConstraintData(std::vector<VectorXR> &data) = 0;
+
+    /// <summary>
+    /// Returns the stretch color graph
+    /// </summary>
+    virtual void getStretchColorGraph(std::vector<Vector32i> &cg) = 0;
+
+#pragma endregion stretch_constraint
+
 
     virtual ~SimulablePBD() = default;
 };

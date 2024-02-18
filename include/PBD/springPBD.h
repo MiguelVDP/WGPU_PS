@@ -46,6 +46,14 @@ public:
         p.segment<3>(nodeB.index) = pB;
     }
 
+    bool checkAdjacency(SpringPBD &spring) {
+        if (nodeA.index == spring.nodeA.index || nodeA.index == spring.nodeB.index ||
+            nodeB.index == spring.nodeA.index || nodeB.index == spring.nodeB.index) {
+            return true;
+        }
+        return false;
+    }
+
 };
 
 #endif //WGPU_PS_SPRINGPBD_H

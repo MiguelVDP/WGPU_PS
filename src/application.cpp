@@ -533,10 +533,10 @@ void Application::onCompute(VectorXR &p, Vector32i &id, VectorXR &data) {
     queue.submit(commands);
 
     bool done = false;
-    auto handle = m_mapBuffer.mapAsync(MapMode::Read, 0, p.size() * sizeof(uint32_t ),
+    auto handle = m_mapBuffer.mapAsync(MapMode::Read, 0, p.size() * sizeof(float ),
     [&](BufferMapAsyncStatus status) {
         if (status == BufferMapAsyncStatus::Success) {
-            const auto *output = (const float *) m_mapBuffer.getConstMappedRange(0,p.size() * sizeof(uint32_t ));
+            const auto *output = (const float *) m_mapBuffer.getConstMappedRange(0,p.size() * sizeof(float ));
             Eigen::Map<const VectorXR> newP(output, p.size());
             p = newP;
 //            std::cout << "----------------------------- \n Pout:" << std::endl;
