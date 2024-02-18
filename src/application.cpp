@@ -469,7 +469,7 @@ Application::Application(std::vector<Object> &vData) :
     m_mvpUniforms.viewMatrix = glm::lookAt(m_camState.pos, m_camState.front, m_camState.up);
 }
 
-void Application::onCompute(VectorXR &p, std::list<Vector32i> &id, std::list<VectorXR> &data) {
+void Application::onCompute(VectorXR &p, Vector32i &id, VectorXR &data) {
 
 //    std::cout << "----------------------------- \n Pin:" << std::endl;
 //    for (int i = 0; i < p.size(); i += 3) {
@@ -478,82 +478,59 @@ void Application::onCompute(VectorXR &p, std::list<Vector32i> &id, std::list<Vec
 //    std::cout << std::endl;
 //
 //    std::cout << "----------------------------- \n ID:" << std::endl;
-//    for (auto i : *colorId) {
-//        std::cout << " " << i << ", ";
+//    for (int i = 0; i < id.size(); i += 2) {
+//        std::cout << "(" << id[i] << ", " << id[i + 1] << ")" << std::endl;
 //    }
 //    std::cout << std::endl;
 //
 //    std::cout << "----------------------------- \n Data:" << std::endl;
-//    for (auto i : *colorData) {
-//        std::cout << " " << i << ", ";
+//    for (int i = 0; i < data.size(); i += 3) {
+//        std::cout << "(" << data[i] << ", " << data[i + 1] << ", " << data[i + 2] << ")" << std::endl;
 //    }
 //    std::cout << std::endl;
 
-
-    //We prepare the pipeline for the first color
-    auto colorId = id.begin();
-    auto colorData = data.begin();
-
     size_t input_size = p.size();
-    size_t idx_size = colorId->size();
-    size_t data_size = colorData->size();
+    size_t idx_size = id.size();
+    size_t data_size = data.size();
 
     //Initialize the compute pipeline
     initComputeBuffersAndTextures(input_size, idx_size, data_size);
+
     initComputeBindings(input_size, idx_size, data_size);
+
     createComputePipeline();
 
     // Initialize a command encoder
     Queue queue = m_device.getQueue();
-
-    //Write the input and output buffers
-    queue.writeBuffer(m_outputBuffer, 0, p.data(), p.size() * sizeof(float ));
-    queue.writeBuffer(m_inputBuffer, 0, p.data(), input_size * sizeof(float));
-
     CommandEncoderDescriptor encoderDesc = Default;
-    CommandEncoder encoder = nullptr;
-    int colorCount = id.size();//Get the colorCount
+    CommandEncoder encoder = m_device.createCommandEncoder(encoderDesc);
 
-    for (int i = 0; i < 1; ++i) {
-
-        if(size_t(colorId->size()) != idx_size || size_t(colorData->size()) != data_size) {
-            input_size = p.size();
-            idx_size = colorId->size();
-            data_size = colorData->size();
-
-            //Initialize the compute pipeline
-            initComputeBuffersAndTextures(input_size, idx_size, data_size);
-            initComputeBindings(input_size, idx_size, data_size);
-            createComputePipeline();
-        }
-
-        encoder = m_device.createCommandEncoder(encoderDesc);
-
-        ComputePassDescriptor computePassDesc;
-        computePassDesc.timestampWriteCount = 0;
-        computePassDesc.timestampWrites = nullptr;
+    ComputePassDescriptor computePassDesc;
+    computePassDesc.timestampWriteCount = 0;
+    computePassDesc.timestampWrites = nullptr;
 
 
-        queue.writeBuffer(m_idxBuffer, 0, colorId->data(), idx_size * sizeof(uint32_t));
-        queue.writeBuffer(m_dataBuffer, 0, colorData->data(), data_size * sizeof(float));
+    queue.writeBuffer(m_inputBuffer, 0, p.data(), input_size * sizeof(float));
+    queue.writeBuffer(m_idxBuffer, 0, id.data(), idx_size * sizeof(uint32_t));
+    queue.writeBuffer(m_dataBuffer, 0, data.data(), data_size * sizeof(float));
 
-        uint32_t constraintCount = idx_size/2;
-        queue.writeBuffer(m_computeSizeBuff, 0, &constraintCount, sizeof(uint32_t));
+//    Vector32i zero = Vector32i ::Zero(p.size());
+    queue.writeBuffer(m_outputBuffer, 0, p.data(), p.size() * sizeof(float ));
 
-        m_computePass = encoder.beginComputePass(computePassDesc);
-        m_computePass.setPipeline(m_computePipeline);
-        m_computePass.setBindGroup(0, m_computeBindGroup, 0, nullptr);
-        m_computePass.dispatchWorkgroups(64, 1, 1);
-        m_computePass.end();
+    uint32_t constraintCount = id.size()/2;
+    queue.writeBuffer(m_computeSizeBuff, 0, &constraintCount, sizeof(uint32_t));
 
-        if(i == colorCount -1) //Now we want to copy the texture to our mapped buffer
-            encoder.copyBufferToBuffer(m_outputBuffer, 0, m_mapBuffer, 0, p.size() * sizeof(float ));
+    m_computePass = encoder.beginComputePass(computePassDesc);
+    m_computePass.setPipeline(m_computePipeline);
+    m_computePass.setBindGroup(0, m_computeBindGroup, 0, nullptr);
+    m_computePass.dispatchWorkgroups(64, 1, 1);
+    m_computePass.end();
 
-        CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
-        queue.submit(commands);
-        colorId++;
-        colorData++;
-    }
+    //Now we want to copy the texture to our mapped buffer
+    encoder.copyBufferToBuffer(m_outputBuffer, 0, m_mapBuffer, 0, p.size() * sizeof(float ));
+    CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
+
+    queue.submit(commands);
 
     bool done = false;
     auto handle = m_mapBuffer.mapAsync(MapMode::Read, 0, p.size() * sizeof(float ),
@@ -562,10 +539,10 @@ void Application::onCompute(VectorXR &p, std::list<Vector32i> &id, std::list<Vec
             const auto *output = (const float *) m_mapBuffer.getConstMappedRange(0,p.size() * sizeof(float ));
             Eigen::Map<const VectorXR> newP(output, p.size());
             p = newP;
-            std::cout << "----------------------------- \n Pout:" << std::endl;
-            for (int i = 0; i < p.size(); i += 3) {
-                std::cout << "(" << p[i] << ", " << p[i + 1] << ", " << p[i + 2] << ")" << std::endl;
-            }
+//            std::cout << "----------------------------- \n Pout:" << std::endl;
+//            for (int i = 0; i < p.size(); i += 3) {
+//                std::cout << "(" << p[i] << ", " << p[i + 1] << ", " << p[i + 2] << ")" << std::endl;
+//            }
             m_mapBuffer.unmap();
         }
         done = true;

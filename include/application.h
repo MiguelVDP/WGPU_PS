@@ -9,7 +9,6 @@
 #include <pipelineData.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <physicmanager.h>
-#include <list>
 
 class Application {
 public:
@@ -25,7 +24,7 @@ public:
     // A function called only once at the very end.
     void onFinish();
 
-    void onCompute(VectorXR &p, std::list<Vector32i> &id, std::list<VectorXR> &data);
+    void onCompute(VectorXR &p, Vector32i &id, VectorXR  &data);
 
     bool isRunning() { return !glfwWindowShouldClose(m_window); }
 

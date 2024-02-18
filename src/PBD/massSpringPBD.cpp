@@ -141,12 +141,12 @@ void MassSpringPBD::projectConstraints(VectorXR &p) {
 //}
 
 
-void MassSpringPBD::getStretchConstraintData(std::list<VectorXR> &data) {
+void MassSpringPBD::getStretchConstraintData(std::vector<VectorXR> &data) {
     for(const auto& it : stretchColorGraphData)
         data.push_back(it);
 }
 
-void MassSpringPBD::getStretchColorGraph(std::list<Vector32i> &cg) {
+void MassSpringPBD::getStretchColorGraph(std::vector<Vector32i> &cg) {
 
     for(const auto& it : stretchColorGraph)
         cg.push_back(it);
@@ -214,30 +214,22 @@ void MassSpringPBD::fillStretchColorGraph() {
                 cr.tail(2) << springs[u].nodeA.index, springs[u].nodeB.index;
                 crData->conservativeResize(crData->size() + 3);
                 crData->tail(3) << springs[u].length0, springs[u].nodeA.massInv, springs[u].nodeB.massInv;
-//                cr.push_back(springs[u].nodeA.index);
-//                cr.push_back(springs[u].nodeB.index);
-//                crData->push_back(springs[u].length0);
-//                crData->push_back(springs[u].nodeA.massInv);
-//                crData->push_back(springs[u].nodeB.massInv);
             }
         color++;
         crData++;
     }
 
 
-//    // print the result
-//    color = 0;
-//    crData = stretchColorGraphData.begin();
-//    for(auto & cr : stretchColorGraph) {
-//        std::cout << "Color " << color << " (" << cr.size() << ")---> ";
-//        for(auto id : cr)
+    // print the result
+//    for(int i = 0; i < colorCount; i++) {
+//        std::cout << "Color " << i << " (" << stretchColorGraph[i].size() << ")---> ";
+//        for(auto id : stretchColorGraph[i])
 //            std::cout << id << ", ";
-//        std::cout << " ||  Data ---> ";
-//        for(auto d : *crData)
+//        std::cout << " ||  Data" << i << " (" << stretchColorGraphData[i].size() << ")---> ";
+//        for(auto d : stretchColorGraphData[i])
 //            std::cout << d << ", ";
 //        std::cout << std::endl;
 //        color++;
-//        crData++;
 //    }
 //    std::cout << std::endl;
 

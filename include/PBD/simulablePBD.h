@@ -3,7 +3,6 @@
 
 #include <PBD/physicmanagerPBD.h>
 #include <Eigen/Dense>
-#include <list>
 
 using VectorXR = Eigen::Matrix<float, Eigen::Dynamic, 1>;
 using Vector32i = Eigen::Matrix<uint32_t , Eigen::Dynamic, 1>;
@@ -77,12 +76,12 @@ public:
     /// <summary>
     /// Return the stretch constraint data
     /// </summary>
-    virtual void getStretchConstraintData(std::list<VectorXR> &data) = 0;
+    virtual void getStretchConstraintData(std::vector<VectorXR> &data) = 0;
 
     /// <summary>
     /// Returns the stretch color graph
     /// </summary>
-    virtual void getStretchColorGraph(std::list<Vector32i> &cg) = 0;
+    virtual void getStretchColorGraph(std::vector<Vector32i> &cg) = 0;
 
 #pragma endregion stretch_constraint
 

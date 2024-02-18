@@ -11,15 +11,14 @@
 #include <structs.h>
 #include <object.h>
 #include <unordered_set>
-#include <list>
 
 class MassSpringPBD : public SimulablePBD {
 
     std::vector<NodePBD> nodes;
     std::vector<SpringPBD> springs;
     std::vector<BendGroup> bendingGroups;
-    std::list<Vector32i> stretchColorGraph;
-    std::list<VectorXR> stretchColorGraphData;
+    std::vector<Vector32i> stretchColorGraph;
+    std::vector<VectorXR> stretchColorGraphData;
 //    Vector32i stretchStencils;
 
     float mass{};
@@ -54,9 +53,9 @@ public:
 
 //    void getStretchStencilIdx(Vector32i &stIdx) override;
 
-    void getStretchConstraintData(std::list<VectorXR> &data) override;
+    void getStretchConstraintData(std::vector<VectorXR> &data) override;
 
-    void getStretchColorGraph(std::list<Vector32i> &cg) override;
+    void getStretchColorGraph(std::vector<Vector32i> &cg) override;
 
 private:
 

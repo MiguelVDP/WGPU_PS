@@ -79,8 +79,8 @@ void PhysicManagerPBD::fixedUpdateGPU() {
     VectorXR p(numDoFs); //Predicted position vector
     VectorXR v(numDoFs); //Velocity vector
     VectorXR fExt(numDoFs); //External forces vector
-    std::list<Vector32i> stretchCG;
-    std::list<VectorXR> stretchCGData;
+    std::vector<Vector32i> stretchCG;
+    std::vector<VectorXR> stretchCGData;
     fExt.setZero();
 
     for (auto &sim: simObjs) {
@@ -101,7 +101,10 @@ void PhysicManagerPBD::fixedUpdateGPU() {
     //Apply constraints
     //Stretch constraint
 
-    app.onCompute(p, stretchCG, stretchCGData);
+    int stretchColorCount = int(stretchCG.size());
+    for (int i = 0; i < stretchColorCount; ++i) {
+        app.onCompute(p, stretchCG[i], stretchCGData[i]);
+    }
 
     //Correct velocities
     v = (p - x) / timeStep;
