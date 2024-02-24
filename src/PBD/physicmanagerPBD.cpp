@@ -100,10 +100,8 @@ void PhysicManagerPBD::fixedUpdateGPU() {
 
     //Apply constraints
     //Stretch constraint
-
-    int stretchColorCount = int(stretchCG.size());
-    for (int i = 0; i < stretchColorCount; ++i) {
-        app.onCompute(p, stretchCG[i], stretchCGData[i]);
+    for (int i = 0; i < simIterations; ++i) {
+        app.onCompute(p, stretchCG, stretchCGData, 2);
     }
 
     //Correct velocities

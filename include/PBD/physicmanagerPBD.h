@@ -23,10 +23,10 @@ public:
 
     explicit PhysicManagerPBD(Application &app) : app(app) {
         paused = false;
-        timeStep = 0.05f;
+        timeStep = 0.5f;
         gravity = Vector3R(0.0f, -9.8f, 0.0f);
         numDoFs = 0;
-        simIterations = 1;
+        simIterations = 2;
     }
 
     void initialize();

@@ -44,7 +44,7 @@ int main() {
     PhysicManagerPBD physicManager(app);
 
 
-    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/triangle.obj", objectData);
+    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/plano.obj", objectData);
 
     for(auto &obj : objectData){
         obj.localToWorld();
@@ -68,7 +68,7 @@ int main() {
     app.m_mvpUniforms.modelMatrix = glm::mat4(1.0f);
     app.m_mvpUniforms.model2Matrix = glm::mat4(1.0f);
 
-    constexpr std::chrono::milliseconds fixedTimeStep(33);
+    constexpr std::chrono::milliseconds fixedTimeStep(50);
 
     // Initialize variables for tracking time
     auto currentTime = std::chrono::high_resolution_clock::now();

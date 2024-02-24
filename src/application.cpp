@@ -155,14 +155,16 @@ void Application::onFinish() {
     m_depthBuffer.destroy();
     m_depthBuffer.release();
 
-    if(m_inputBuffer != nullptr)  m_inputBuffer.release();
-    if(m_outputBuffer != nullptr)  m_outputBuffer.release();
-    if(m_idxBuffer != nullptr)  m_idxBuffer.release();
-    if(m_dataBuffer != nullptr)  m_dataBuffer.release();
-    if(m_computeSizeBuff != nullptr)  m_computeSizeBuff.release();
-    if(m_computeBindGroup != nullptr)  m_computeBindGroup.release();
-    if(m_computePipeline != nullptr)  m_computePipeline.release();
-    if(m_computeBindGroupLayout != nullptr)  m_computeBindGroupLayout.release();
+    if (m_inputBuffer != nullptr) m_inputBuffer.release();
+    if (m_outputBuffer != nullptr) m_outputBuffer.release();
+    for (size_t i = 0; i < m_idxBuffer.size(); ++i) {
+        if (m_idxBuffer[i] != nullptr) m_idxBuffer[i].release();
+        if (m_dataBuffer[i] != nullptr) m_dataBuffer[i].release();
+        if (m_stenCountBuffer[i] != nullptr) m_stenCountBuffer[i].release();
+    }
+    if (m_computeBindGroup != nullptr) m_computeBindGroup.release();
+    if (m_computePipeline != nullptr) m_computePipeline.release();
+    if (m_computeBindGroupLayout != nullptr) m_computeBindGroupLayout.release();
 }
 
 bool Application::initWindowAndDevice(int width, int height) {
@@ -438,9 +440,9 @@ void Application::onMouseMove(double x, double y) {
     if (pitch < -89.0f) pitch = -89.0f;
 
     glm::vec3 front;
-    front.x = (float)cos(glm::radians(yaw) * cos(glm::radians(pitch)));
-    front.y = (float)sin(glm::radians(pitch));
-    front.z = (float)sin(glm::radians(yaw) * cos(glm::radians(pitch)));
+    front.x = (float) cos(glm::radians(yaw) * cos(glm::radians(pitch)));
+    front.y = (float) sin(glm::radians(pitch));
+    front.z = (float) sin(glm::radians(yaw) * cos(glm::radians(pitch)));
     m_camState.front = glm::normalize(m_camState.pos + front);
 
     m_mvpUniforms.viewMatrix = glm::lookAt(m_camState.pos, m_camState.front, m_camState.up);
@@ -469,7 +471,7 @@ Application::Application(std::vector<Object> &vData) :
     m_mvpUniforms.viewMatrix = glm::lookAt(m_camState.pos, m_camState.front, m_camState.up);
 }
 
-void Application::onCompute(VectorXR &p, Vector32i &id, VectorXR &data) {
+void Application::onCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector<VectorXR> &data, size_t stencil_size) {
 
 //    std::cout << "----------------------------- \n Pin:" << std::endl;
 //    for (int i = 0; i < p.size(); i += 3) {
@@ -489,48 +491,54 @@ void Application::onCompute(VectorXR &p, Vector32i &id, VectorXR &data) {
 //    }
 //    std::cout << std::endl;
 
+    int color_count = int(id.size()); //The amount of colors in the graph
     size_t input_size = p.size();
-    size_t idx_size = id.size();
-    size_t data_size = data.size();
 
     //Initialize the compute pipeline
-    initComputeBuffersAndTextures(input_size, idx_size, data_size);
-
-    initComputeBindings(input_size, idx_size, data_size);
-
-    createComputePipeline();
+    initComputeBuffersAndTextures(input_size, id, data);
 
     // Initialize a command encoder
     Queue queue = m_device.getQueue();
+
+    queue.writeBuffer(m_inputBuffer, 0, p.data(), input_size * sizeof(float));
+    queue.writeBuffer(m_outputBuffer, 0, p.data(), input_size * sizeof(float));
+
+    for (int i = 0; i < color_count; ++i) {
+        queue.writeBuffer(m_idxBuffer[i], 0, id[i].data(), id[i].size() * sizeof(uint32_t));
+
+        queue.writeBuffer(m_dataBuffer[i], 0, data[i].data(), data[i].size() * sizeof(float));
+
+        uint32_t constraintCount = id[i].size() / stencil_size;
+        queue.writeBuffer(m_stenCountBuffer[i], 0, &constraintCount, sizeof(uint32_t));
+    }
+
     CommandEncoderDescriptor encoderDesc = Default;
-    CommandEncoder encoder = m_device.createCommandEncoder(encoderDesc);
+    CommandEncoder encoder = nullptr;
 
     ComputePassDescriptor computePassDesc;
     computePassDesc.timestampWriteCount = 0;
     computePassDesc.timestampWrites = nullptr;
+//    m_computePass.reserve(color_count);
+    for (int i = 0; i < color_count; ++i) {
 
+        initComputeBindings(input_size, id[i].size(), data[i].size(), i);
+        createComputePipeline();
 
-    queue.writeBuffer(m_inputBuffer, 0, p.data(), input_size * sizeof(float));
-    queue.writeBuffer(m_idxBuffer, 0, id.data(), idx_size * sizeof(uint32_t));
-    queue.writeBuffer(m_dataBuffer, 0, data.data(), data_size * sizeof(float));
-
-//    Vector32i zero = Vector32i ::Zero(p.size());
-    queue.writeBuffer(m_outputBuffer, 0, p.data(), p.size() * sizeof(float ));
-
-    uint32_t constraintCount = id.size()/2;
-    queue.writeBuffer(m_computeSizeBuff, 0, &constraintCount, sizeof(uint32_t));
-
-    m_computePass = encoder.beginComputePass(computePassDesc);
-    m_computePass.setPipeline(m_computePipeline);
-    m_computePass.setBindGroup(0, m_computeBindGroup, 0, nullptr);
-    m_computePass.dispatchWorkgroups(64, 1, 1);
-    m_computePass.end();
-
-    //Now we want to copy the texture to our mapped buffer
-    encoder.copyBufferToBuffer(m_outputBuffer, 0, m_mapBuffer, 0, p.size() * sizeof(float ));
-    CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
-
-    queue.submit(commands);
+        encoder = m_device.createCommandEncoder(encoderDesc);
+        m_computePass = encoder.beginComputePass(computePassDesc);
+        m_computePass.setPipeline(m_computePipeline);
+        m_computePass.setBindGroup(0, m_computeBindGroup, 0, nullptr);
+        m_computePass.dispatchWorkgroups(64, 1, 1);
+        m_computePass.end();
+        if (i == color_count - 1) {
+            //Now we want to copy the texture to our mapped buffer
+            encoder.copyBufferToBuffer(m_outputBuffer, 0, m_mapBuffer, 0, input_size * sizeof(float));
+        } else {
+            encoder.copyBufferToBuffer(m_outputBuffer, 0, m_inputBuffer, 0, input_size * sizeof(float));
+        }
+        CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
+        queue.submit(commands);
+    }
 
     bool done = false;
     auto handle = m_mapBuffer.mapAsync(MapMode::Read, 0, p.size() * sizeof(float ),
@@ -570,41 +578,42 @@ void Application::onCompute(VectorXR &p, Vector32i &id, VectorXR &data) {
 void Application::createComputePipeline() {
     m_computeShaderModule = ResourceManager::loadShaderModule(RESOURCE_DIR "/computeShader.wgsl", m_device);
     ComputePipelineDescriptor computePipelineDesc = Default;
-    computePipelineDesc.compute.entryPoint = "computeStuff";
+    computePipelineDesc.compute.entryPoint = "stretchConstraint";
     computePipelineDesc.compute.module = m_computeShaderModule;
     computePipelineDesc.layout = m_computePipelineLayout;
     m_computePipeline = m_device.createComputePipeline(computePipelineDesc);
 }
 
-void Application::initComputeBindings(size_t inputSize, size_t idxSize, size_t dataSize) {
+void Application::initComputeBindings(size_t input_size, size_t idx_size, size_t data_size, int color) {
+
     //We set the amount of layout entries
     m_computeBindingLayoutEntries.resize(5);
 
     //Input Buffer
     m_computeBindingLayoutEntries[0].binding = 0;
     m_computeBindingLayoutEntries[0].visibility = ShaderStage::Compute;
-    m_computeBindingLayoutEntries[0].buffer.minBindingSize = inputSize * sizeof(float);
+    m_computeBindingLayoutEntries[0].buffer.minBindingSize = input_size * sizeof(float);
     m_computeBindingLayoutEntries[0].buffer.type = BufferBindingType::ReadOnlyStorage;
     m_computeBindingLayoutEntries[0].buffer.hasDynamicOffset = false;
 
     //Output Buffer
     m_computeBindingLayoutEntries[1].binding = 1;
     m_computeBindingLayoutEntries[1].visibility = ShaderStage::Compute;
-    m_computeBindingLayoutEntries[1].buffer.minBindingSize = inputSize * sizeof(float);
+    m_computeBindingLayoutEntries[1].buffer.minBindingSize = input_size * sizeof(float);
     m_computeBindingLayoutEntries[1].buffer.type = BufferBindingType::Storage;
     m_computeBindingLayoutEntries[1].buffer.hasDynamicOffset = false;
 
     //Index Buffer
     m_computeBindingLayoutEntries[2].binding = 2;
     m_computeBindingLayoutEntries[2].visibility = ShaderStage::Compute;
-    m_computeBindingLayoutEntries[2].buffer.minBindingSize = idxSize * sizeof(uint32_t);
+    m_computeBindingLayoutEntries[2].buffer.minBindingSize = idx_size * sizeof(uint32_t);
     m_computeBindingLayoutEntries[2].buffer.type = BufferBindingType::ReadOnlyStorage;
     m_computeBindingLayoutEntries[2].buffer.hasDynamicOffset = false;
 
     //Data Buffer
     m_computeBindingLayoutEntries[3].binding = 3;
     m_computeBindingLayoutEntries[3].visibility = ShaderStage::Compute;
-    m_computeBindingLayoutEntries[3].buffer.minBindingSize = dataSize * sizeof(float);
+    m_computeBindingLayoutEntries[3].buffer.minBindingSize = data_size * sizeof(float);
     m_computeBindingLayoutEntries[3].buffer.type = BufferBindingType::ReadOnlyStorage;
     m_computeBindingLayoutEntries[3].buffer.hasDynamicOffset = false;
 
@@ -632,30 +641,30 @@ void Application::initComputeBindings(size_t inputSize, size_t idxSize, size_t d
     //Input Buffer
     entries[0].binding = 0;
     entries[0].buffer = m_inputBuffer;
-    entries[0].size = sizeof(float) * inputSize;
+    entries[0].size = sizeof(float) * input_size;
     entries[0].offset = 0;
 
     //Output Buffer
     entries[1].binding = 1;
     entries[1].buffer = m_outputBuffer;
-    entries[1].size = sizeof(float ) * inputSize;
+    entries[1].size = sizeof(float) * input_size;
     entries[1].offset = 0;
 
     //Idx Buffer
     entries[2].binding = 2;
-    entries[2].buffer = m_idxBuffer;
-    entries[2].size = sizeof(uint32_t) * idxSize;
+    entries[2].buffer = m_idxBuffer[color];
+    entries[2].size = sizeof(uint32_t) * idx_size;
     entries[2].offset = 0;
 
     //Data Buffer
     entries[3].binding = 3;
-    entries[3].buffer = m_dataBuffer;
-    entries[3].size = sizeof(float) * dataSize;
+    entries[3].buffer = m_dataBuffer[color];
+    entries[3].size = sizeof(float) * data_size;
     entries[3].offset = 0;
 
     //Size Buffer
     entries[4].binding = 4;
-    entries[4].buffer = m_computeSizeBuff;
+    entries[4].buffer = m_stenCountBuffer[color];
     entries[4].size = sizeof(uint32_t);
     entries[4].offset = 0;
 
@@ -667,41 +676,62 @@ void Application::initComputeBindings(size_t inputSize, size_t idxSize, size_t d
 
 }
 
-void Application::initComputeBuffersAndTextures(size_t inputSize, size_t idxSize, size_t dataSize) {
+void
+Application::initComputeBuffersAndTextures(size_t input_size, std::vector<Vector32i> &id, std::vector<VectorXR> &data) {
 
     //Map Buffer for reading the texture
     BufferDescriptor buffDesc;
 
-    //Compute size buffer
-    buffDesc.size = sizeof(uint32_t);
-    buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage;
-    buffDesc.mappedAtCreation = false;
-    m_computeSizeBuff = m_device.createBuffer(buffDesc);
-
     //Map Buffer
     buffDesc.mappedAtCreation = false;
-    buffDesc.size = inputSize * sizeof(uint32_t );
+    buffDesc.size = input_size * sizeof(float);
     buffDesc.usage = BufferUsage::CopyDst | BufferUsage::MapRead;
+    buffDesc.mappedAtCreation = false;
     m_mapBuffer = m_device.createBuffer(buffDesc);
 
     //Input Buffer
-    buffDesc.size = inputSize * sizeof(float);
+    buffDesc.size = input_size * sizeof(float);
     buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage;
     m_inputBuffer = m_device.createBuffer(buffDesc);
 
     //Output Buffer
-    buffDesc.size = inputSize * sizeof(float);
+    buffDesc.size = input_size * sizeof(float);
     buffDesc.usage = BufferUsage::Storage | BufferUsage::CopySrc | BufferUsage::CopyDst;
     m_outputBuffer = m_device.createBuffer(buffDesc);
 
-    //Data Buffer
-    buffDesc.size = dataSize * sizeof(float);
-    buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage;
-    m_dataBuffer = m_device.createBuffer(buffDesc);
+    //We now create a buffer for each color
+    size_t color_count = id.size();
+    m_idxBuffer.reserve(color_count);
+    m_dataBuffer.reserve(color_count);
+    m_stenCountBuffer.reserve(color_count);
 
-    //Index Buffer
-    buffDesc.size = idxSize * sizeof(uint32_t);
-    buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage;
-    m_idxBuffer = m_device.createBuffer(buffDesc);
+    size_t idx_size, data_size;
+    for (size_t i = 0; i < color_count; ++i) {
+        idx_size = id[i].size();
+        data_size = data[i].size();
 
+        //Data Buffer
+        buffDesc.size = data_size * sizeof(float);
+        buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage;
+        m_dataBuffer[i] = m_device.createBuffer(buffDesc);
+
+        //Index Buffer
+        buffDesc.size = idx_size * sizeof(uint32_t);
+        buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage;
+        m_idxBuffer[i] = m_device.createBuffer(buffDesc);
+
+        //Compute size buffer
+        buffDesc.size = sizeof(uint32_t);
+        buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage;
+        m_stenCountBuffer[i] = m_device.createBuffer(buffDesc);
+    }
+
+}
+
+uint32_t Application::respectAlignment(uint32_t size) {
+    uint32_t align_remainder = size % m_deviceLimits.minStorageBufferOffsetAlignment;
+    if (align_remainder != 0) {
+        align_remainder = m_deviceLimits.minStorageBufferOffsetAlignment - align_remainder;
+    }
+    return size + align_remainder;
 }

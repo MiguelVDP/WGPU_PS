@@ -24,7 +24,7 @@ public:
     // A function called only once at the very end.
     void onFinish();
 
-    void onCompute(VectorXR &p, Vector32i &id, VectorXR  &data);
+    void onCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector<VectorXR>  &data, size_t stencil_size);
 
     bool isRunning() { return !glfwWindowShouldClose(m_window); }
 
@@ -38,12 +38,12 @@ public:
     wgpu::Buffer m_mvpBuffer = nullptr;
 
     //Compute Buffers
-    wgpu::Buffer m_mapBuffer = nullptr;
-    wgpu::Buffer m_computeSizeBuff = nullptr;
     wgpu::Buffer m_inputBuffer = nullptr;
-    wgpu::Buffer m_dataBuffer = nullptr;
     wgpu::Buffer m_outputBuffer = nullptr;
-    wgpu::Buffer m_idxBuffer = nullptr;
+    wgpu::Buffer m_mapBuffer = nullptr;
+    std::vector<wgpu::Buffer> m_stenCountBuffer;
+    std::vector<wgpu::Buffer> m_dataBuffer;
+    std::vector<wgpu::Buffer> m_idxBuffer;
 
     std::vector<Object> &m_vertexData;
     int m_idxCount{};
@@ -117,11 +117,13 @@ private:
 
     void onKeyPressed(int key, int action);
 
-    void initComputeBindings(size_t inputSize, size_t idxSize, size_t dataSize);
+    void initComputeBindings(size_t input_size, size_t idx_size, size_t data_size, int color);
 
-    void initComputeBuffersAndTextures(size_t inputSize, size_t idxSize, size_t dataSize);
+    void initComputeBuffersAndTextures(size_t input_size, std::vector<Vector32i> &id, std::vector<VectorXR>  &data);
 
     void createComputePipeline();
+
+    uint32_t respectAlignment(uint32_t size);
 };
 
 #endif
