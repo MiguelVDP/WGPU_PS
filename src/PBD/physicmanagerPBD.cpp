@@ -10,6 +10,18 @@ void PhysicManagerPBD::initialize() {
         simObj->initialize(numDoFs);
         numDoFs += simObj->getNumDoFs();
     }
+
+    VectorXR obj_pos(numDoFs);
+    std::vector<Vector32i> stretchCG;
+    std::vector<VectorXR> stretchCGData;
+
+    for (auto &sim: simObjs) {
+        sim->getPosition(obj_pos);
+        sim->getStretchColorGraph(stretchCG);
+        sim->getStretchConstraintData(stretchCGData);
+    }
+
+    app.initCompute(obj_pos, stretchCG, stretchCGData);
 }
 
 void PhysicManagerPBD::fixedUpdate() {
@@ -79,16 +91,18 @@ void PhysicManagerPBD::fixedUpdateGPU() {
     VectorXR p(numDoFs); //Predicted position vector
     VectorXR v(numDoFs); //Velocity vector
     VectorXR fExt(numDoFs); //External forces vector
-    std::vector<Vector32i> stretchCG;
-    std::vector<VectorXR> stretchCGData;
+//    std::vector<Vector32i> stretchCG;
+//    std::vector<VectorXR> stretchCGData;
+    int stretchColorCount = 0;
     fExt.setZero();
 
     for (auto &sim: simObjs) {
         sim->getPosition(x);
         sim->getVelocity(v);
         sim->getExtFore(fExt);
-        sim->getStretchColorGraph(stretchCG);
-        sim->getStretchConstraintData(stretchCGData);
+//        sim->getStretchColorGraph(stretchCG);
+//        sim->getStretchConstraintData(stretchCGData);
+        sim->getStretchColorCount(stretchColorCount);
     }
 
     //Compute velocity according to external forces
@@ -101,7 +115,7 @@ void PhysicManagerPBD::fixedUpdateGPU() {
     //Apply constraints
     //Stretch constraint
     for (int i = 0; i < simIterations; ++i) {
-        app.onCompute(p, stretchCG, stretchCGData, 2);
+        app.onComputeOpt(p, stretchColorCount);
     }
 
     //Correct velocities

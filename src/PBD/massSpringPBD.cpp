@@ -234,3 +234,7 @@ void MassSpringPBD::fillStretchColorGraph() {
 //    std::cout << std::endl;
 
 }
+
+void MassSpringPBD::getStretchColorCount(int &color_count) {
+    color_count += int(stretchColorGraph.size());
+}

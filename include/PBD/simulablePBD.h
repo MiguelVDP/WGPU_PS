@@ -83,6 +83,11 @@ public:
     /// </summary>
     virtual void getStretchColorGraph(std::vector<Vector32i> &cg) = 0;
 
+    /// <summary>
+    /// Returns the stretch color graph
+    /// </summary>
+    virtual void getStretchColorCount(int &color_count) = 0;
+
 #pragma endregion stretch_constraint
 
 

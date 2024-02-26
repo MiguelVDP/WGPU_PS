@@ -24,6 +24,10 @@ public:
     // A function called only once at the very end.
     void onFinish();
 
+    void initCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector<VectorXR>  &data);
+
+    void onComputeOpt(VectorXR &p, int color_count);
+
     void onCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector<VectorXR>  &data, size_t stencil_size);
 
     bool isRunning() { return !glfwWindowShouldClose(m_window); }
@@ -44,6 +48,8 @@ public:
     std::vector<wgpu::Buffer> m_stenCountBuffer;
     std::vector<wgpu::Buffer> m_dataBuffer;
     std::vector<wgpu::Buffer> m_idxBuffer;
+    std::vector<int> m_idxSizes;
+    std::vector<int> m_dataSizes;
 
     std::vector<Object> &m_vertexData;
     int m_idxCount{};

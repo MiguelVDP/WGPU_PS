@@ -480,14 +480,20 @@ void Application::onCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector
 //    std::cout << std::endl;
 //
 //    std::cout << "----------------------------- \n ID:" << std::endl;
-//    for (int i = 0; i < id.size(); i += 2) {
-//        std::cout << "(" << id[i] << ", " << id[i + 1] << ")" << std::endl;
+//    for (int i = 0; i < id.size(); i ++) {
+//        std::cout << "Color " << i << ":" << std::endl;
+//        for(int j = 0; j < id[i].size(); j+=2){
+//            std::cout << "  - (" << id[i][j]<< ", " << id[i][j+1] << ")" << std::endl;
+//        }
 //    }
 //    std::cout << std::endl;
 //
 //    std::cout << "----------------------------- \n Data:" << std::endl;
-//    for (int i = 0; i < data.size(); i += 3) {
-//        std::cout << "(" << data[i] << ", " << data[i + 1] << ", " << data[i + 2] << ")" << std::endl;
+//    for (int i = 0; i < data.size(); i ++) {
+//        std::cout << "Color " << i << ":" << std::endl;
+//        for(int j = 0; j < id[i].size(); j+=3){
+//            std::cout << "  - (" << data[i][j] << ", " << data[i][j+1] << ", " << data[i][j+2] << ")" << std::endl;
+//        }
 //    }
 //    std::cout << std::endl;
 
@@ -498,18 +504,18 @@ void Application::onCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector
     initComputeBuffersAndTextures(input_size, id, data);
 
     // Initialize a command encoder
-    Queue queue = m_device.getQueue();
+    m_queue = m_device.getQueue();
 
-    queue.writeBuffer(m_inputBuffer, 0, p.data(), input_size * sizeof(float));
-    queue.writeBuffer(m_outputBuffer, 0, p.data(), input_size * sizeof(float));
+    m_queue.writeBuffer(m_inputBuffer, 0, p.data(), input_size * sizeof(float));
+    m_queue.writeBuffer(m_outputBuffer, 0, p.data(), input_size * sizeof(float));
 
     for (int i = 0; i < color_count; ++i) {
-        queue.writeBuffer(m_idxBuffer[i], 0, id[i].data(), id[i].size() * sizeof(uint32_t));
+        m_queue.writeBuffer(m_idxBuffer[i], 0, id[i].data(), id[i].size() * sizeof(uint32_t));
 
-        queue.writeBuffer(m_dataBuffer[i], 0, data[i].data(), data[i].size() * sizeof(float));
+        m_queue.writeBuffer(m_dataBuffer[i], 0, data[i].data(), data[i].size() * sizeof(float));
 
         uint32_t constraintCount = id[i].size() / stencil_size;
-        queue.writeBuffer(m_stenCountBuffer[i], 0, &constraintCount, sizeof(uint32_t));
+        m_queue.writeBuffer(m_stenCountBuffer[i], 0, &constraintCount, sizeof(uint32_t));
     }
 
     CommandEncoderDescriptor encoderDesc = Default;
@@ -537,7 +543,7 @@ void Application::onCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector
             encoder.copyBufferToBuffer(m_outputBuffer, 0, m_inputBuffer, 0, input_size * sizeof(float));
         }
         CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
-        queue.submit(commands);
+        m_queue.submit(commands);
     }
 
     bool done = false;
@@ -559,7 +565,7 @@ void Application::onCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector
 
     while (!done) {
 #ifdef WEBGPU_BACKEND_WGPU
-        queue.submit(0, nullptr);
+        m_queue.submit(0, nullptr);
 #else
         m_instance.processEvents();
 #endif
@@ -570,7 +576,7 @@ void Application::onCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector
 #if !defined(WEBGPU_BACKEND_WGPU)
     wgpuCommandBufferRelease(commands);
     wgpuCommandEncoderRelease(encoder);
-    wgpuQueueRelease(queue);
+    wgpuQueueRelease(m_queue);
     wgpuComputePassEncoderRelease(computePass);
 #endif
 }
@@ -734,4 +740,95 @@ uint32_t Application::respectAlignment(uint32_t size) {
         align_remainder = m_deviceLimits.minStorageBufferOffsetAlignment - align_remainder;
     }
     return size + align_remainder;
+}
+
+void Application::initCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector<VectorXR>  &data) {
+
+    int obj_size = int(p.size());
+    size_t color_count = id.size();
+
+    initComputeBuffersAndTextures(obj_size, id, data);
+
+    m_idxSizes.reserve(color_count);
+    m_dataSizes.reserve(color_count);
+    for (int i = 0; i < int(color_count); ++i) {
+        m_queue.writeBuffer(m_idxBuffer[i], 0, id[i].data(), id[i].size() * sizeof(uint32_t));
+        m_idxSizes[i] = int(id[i].size());
+
+        m_queue.writeBuffer(m_dataBuffer[i], 0, data[i].data(), data[i].size() * sizeof(float));
+        m_dataSizes[i] = int(data[i].size());
+
+        uint32_t constraintCount = id[i].size() / 2;
+        m_queue.writeBuffer(m_stenCountBuffer[i], 0, &constraintCount, sizeof(uint32_t));
+    }
+
+}
+
+void Application::onComputeOpt(VectorXR &p, int color_count) {
+    int obj_size = p.size();
+
+    m_queue.writeBuffer(m_inputBuffer, 0, p.data(), obj_size * sizeof(float));
+    m_queue.writeBuffer(m_outputBuffer, 0, p.data(), obj_size * sizeof(float));
+
+    CommandEncoderDescriptor encoderDesc = Default;
+    CommandEncoder encoder = nullptr;
+
+    ComputePassDescriptor computePassDesc;
+    computePassDesc.timestampWriteCount = 0;
+    computePassDesc.timestampWrites = nullptr;
+
+    for (int i = 0; i < color_count; ++i) {
+
+        initComputeBindings(obj_size, m_idxSizes[i], m_dataSizes[i], i);
+        createComputePipeline();
+
+        encoder = m_device.createCommandEncoder(encoderDesc);
+        m_computePass = encoder.beginComputePass(computePassDesc);
+        m_computePass.setPipeline(m_computePipeline);
+        m_computePass.setBindGroup(0, m_computeBindGroup, 0, nullptr);
+        m_computePass.dispatchWorkgroups(64, 1, 1);
+        m_computePass.end();
+        if (i == color_count - 1) {
+            //Now we want to copy the texture to our mapped buffer
+            encoder.copyBufferToBuffer(m_outputBuffer, 0, m_mapBuffer, 0, obj_size * sizeof(float));
+        } else {
+            encoder.copyBufferToBuffer(m_outputBuffer, 0, m_inputBuffer, 0, obj_size * sizeof(float));
+        }
+        CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
+        m_queue.submit(commands);
+    }
+
+    bool done = false;
+    auto handle = m_mapBuffer.mapAsync(MapMode::Read, 0, p.size() * sizeof(float ),
+                                       [&](BufferMapAsyncStatus status) {
+        if (status == BufferMapAsyncStatus::Success) {
+            const auto *output = (const float *) m_mapBuffer.getConstMappedRange(0,p.size() * sizeof(float ));
+            Eigen::Map<const VectorXR> newP(output, p.size());
+            p = newP;
+//            std::cout << "----------------------------- \n Pout:" << std::endl;
+//            for (int i = 0; i < p.size(); i += 3) {
+//                std::cout << "(" << p[i] << ", " << p[i + 1] << ", " << p[i + 2] << ")" << std::endl;
+//            }
+            m_mapBuffer.unmap();
+        }
+        done = true;
+    });
+
+
+    while (!done) {
+#ifdef WEBGPU_BACKEND_WGPU
+        m_queue.submit(0, nullptr);
+#else
+        m_instance.processEvents();
+#endif
+    }
+
+
+    // Clean up
+#if !defined(WEBGPU_BACKEND_WGPU)
+    wgpuCommandBufferRelease(commands);
+    wgpuCommandEncoderRelease(encoder);
+    wgpuQueueRelease(m_queue);
+    wgpuComputePassEncoderRelease(computePass);
+#endif
 }

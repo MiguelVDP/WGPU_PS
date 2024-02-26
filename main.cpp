@@ -14,26 +14,26 @@
 using namespace wgpu;
 namespace fs = std::filesystem;
 
-void transformVertex(Application &app, float t) {
-    glm::mat4 m = glm::mat4(1.0f);
-    m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0, -5));
-//    m = glm::rotate(m, glm::radians(90.0f), glm::vec3(1, 0, 0));
-//    m = glm::rotate(m, t, glm::vec3(0, 0, 1));
-    static_cast<void>(t);
-    app.m_mvpUniforms.modelMatrix = m;
-}
-
-void transformVertex2(Application &app, float t) {
-    float angle = t;
-    glm::mat4 m = glm::mat4(1.0f);
-    m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, -1, 0));
-    m = glm::rotate(m, glm::radians(-90.0f), glm::vec3(t, 0, 0));
-    m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
-    m = glm::translate(m, glm::vec3(0.f, -1.5, 0));
-    m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
-
-    app.m_mvpUniforms.model2Matrix = m;
-}
+//void transformVertex(Application &app, float t) {
+//    glm::mat4 m = glm::mat4(1.0f);
+//    m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0, -5));
+////    m = glm::rotate(m, glm::radians(90.0f), glm::vec3(1, 0, 0));
+////    m = glm::rotate(m, t, glm::vec3(0, 0, 1));
+//    static_cast<void>(t);
+//    app.m_mvpUniforms.modelMatrix = m;
+//}
+//
+//void transformVertex2(Application &app, float t) {
+//    float angle = t;
+//    glm::mat4 m = glm::mat4(1.0f);
+//    m = glm::translate(glm::mat4(1.0f), glm::vec3(0.f, -1, 0));
+//    m = glm::rotate(m, glm::radians(-90.0f), glm::vec3(t, 0, 0));
+//    m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
+//    m = glm::translate(m, glm::vec3(0.f, -1.5, 0));
+//    m = glm::rotate(m, angle, glm::vec3(0, 0, 1));
+//
+//    app.m_mvpUniforms.model2Matrix = m;
+//}
 
 
 int main() {
@@ -50,11 +50,12 @@ int main() {
         obj.localToWorld();
     }
 
+    app.onInit(false);
+
     physicManager.simObjs.emplace_back(
             std::unique_ptr<SimulablePBD>(new MassSpringPBD(0.5f, 5.f, 2.5f, physicManager, objectData[0])));
     physicManager.initialize();
 
-    app.onInit(false);
 
     MyUniforms uniforms{};
     uniforms.projectionMatrix = glm::mat4(0.f);
@@ -68,7 +69,7 @@ int main() {
     app.m_mvpUniforms.modelMatrix = glm::mat4(1.0f);
     app.m_mvpUniforms.model2Matrix = glm::mat4(1.0f);
 
-    constexpr std::chrono::milliseconds fixedTimeStep(50);
+    constexpr std::chrono::milliseconds fixedTimeStep(33);
 
     // Initialize variables for tracking time
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -76,6 +77,10 @@ int main() {
     std::chrono::milliseconds lag(0);
 
 //    physicManager.fixedUpdateGPU();
+
+    auto prfm_timer = std::chrono::high_resolution_clock::now();
+    auto prfm_prev = prfm_timer;
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prfm_timer - prfm_prev);
 
     while (app.isRunning()) {
 
@@ -90,15 +95,28 @@ int main() {
         //////    FIXED UPDATE    //////
         while (lag >= fixedTimeStep) {
             // Perform fixed update tasks here
+            prfm_prev = std::chrono::high_resolution_clock::now();
+
             physicManager.fixedUpdateGPU();
+
+            prfm_timer = std::chrono::high_resolution_clock::now();
+            elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prfm_timer - prfm_prev);
+            std::cout << "Physic step: " << elapsed.count() << std::endl;
 
             // Decrease lag by the fixed time step
             lag -= fixedTimeStep;
         }
-        auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
-        transformVertex(app, t);
-        transformVertex2(app, t);
+//        auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
+//        transformVertex(app, t);
+//        transformVertex2(app, t);
+
+        prfm_prev = std::chrono::high_resolution_clock::now();
+
         app.onFrame();
+
+        prfm_timer = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prfm_timer - prfm_prev);
+        std::cout << "Render: " << elapsed.count() << std::endl;
     }
 
     app.onFinish();

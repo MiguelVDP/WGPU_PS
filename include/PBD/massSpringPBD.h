@@ -57,6 +57,8 @@ public:
 
     void getStretchColorGraph(std::vector<Vector32i> &cg) override;
 
+    void getStretchColorCount(int &color_count) override;
+
 private:
 
     ~MassSpringPBD() override = default;
