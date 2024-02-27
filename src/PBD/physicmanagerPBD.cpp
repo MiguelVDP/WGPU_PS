@@ -11,17 +11,23 @@ void PhysicManagerPBD::initialize() {
         numDoFs += simObj->getNumDoFs();
     }
 
-    VectorXR obj_pos(numDoFs);
+    VectorXR x(numDoFs); //Actual position vector
+    VectorXR p(numDoFs); //Predicted position vector
+    VectorXR v(numDoFs); //Velocity vector
     std::vector<Vector32i> stretchCG;
     std::vector<VectorXR> stretchCGData;
+    VectorXR fExt(numDoFs); //External forces vector
+    fExt.setZero();
 
     for (auto &sim: simObjs) {
-        sim->getPosition(obj_pos);
+        sim->getPosition(x);
+        sim->getVelocity(v);
+        sim->getExtFore(fExt);
         sim->getStretchColorGraph(stretchCG);
         sim->getStretchConstraintData(stretchCGData);
     }
 
-    app.initCompute(obj_pos, stretchCG, stretchCGData);
+    app.initCompute(x, v, fExt, stretchCG, stretchCGData, timeStep);
 }
 
 void PhysicManagerPBD::fixedUpdate() {
@@ -88,34 +94,21 @@ void PhysicManagerPBD::fixedUpdateGPU() {
     if (paused) return;
 
     VectorXR x(numDoFs); //Actual position vector
-    VectorXR p(numDoFs); //Predicted position vector
     VectorXR v(numDoFs); //Velocity vector
-    VectorXR fExt(numDoFs); //External forces vector
-//    std::vector<Vector32i> stretchCG;
-//    std::vector<VectorXR> stretchCGData;
     int stretchColorCount = 0;
-    fExt.setZero();
 
     for (auto &sim: simObjs) {
         sim->getPosition(x);
-        sim->getVelocity(v);
-        sim->getExtFore(fExt);
-//        sim->getStretchColorGraph(stretchCG);
-//        sim->getStretchConstraintData(stretchCGData);
         sim->getStretchColorCount(stretchColorCount);
     }
-
-    //Compute velocity according to external forces
-    v = v + timeStep * fExt;
-    //Compute the predicted positions (without constraints)
-    p = x + timeStep * v;
 
     //TODO Collisions
 
     //Apply constraints
     //Stretch constraint
+    VectorXR p(numDoFs);
     for (int i = 0; i < simIterations; ++i) {
-        app.onComputeOpt(p, stretchColorCount);
+        p = app.onComputeOpt(stretchColorCount);
     }
 
     //Correct velocities

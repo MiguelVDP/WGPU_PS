@@ -24,9 +24,12 @@ public:
     // A function called only once at the very end.
     void onFinish();
 
-    void initCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector<VectorXR>  &data);
+    void initCompute(VectorXR &x, VectorXR &v, VectorXR &f, std::vector<Vector32i> &id, std::vector<VectorXR>  &data,
+                     float timeStep);
 
-    void onComputeOpt(VectorXR &p, int color_count);
+    void computeP();
+
+    VectorXR onComputeOpt(int color_count);
 
     void onCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector<VectorXR>  &data, size_t stencil_size);
 
@@ -42,14 +45,19 @@ public:
     wgpu::Buffer m_mvpBuffer = nullptr;
 
     //Compute Buffers
-    wgpu::Buffer m_inputBuffer = nullptr;
-    wgpu::Buffer m_outputBuffer = nullptr;
+    wgpu::Buffer m_xBuffer = nullptr;
+    wgpu::Buffer m_piBuffer = nullptr;
+    wgpu::Buffer m_pfBuffer = nullptr;
+    wgpu::Buffer m_vBuffer = nullptr;
+    wgpu::Buffer m_fBuffer = nullptr;
+    wgpu::Buffer m_stepDataBuffer = nullptr;
     wgpu::Buffer m_mapBuffer = nullptr;
     std::vector<wgpu::Buffer> m_stenCountBuffer;
     std::vector<wgpu::Buffer> m_dataBuffer;
     std::vector<wgpu::Buffer> m_idxBuffer;
     std::vector<int> m_idxSizes;
     std::vector<int> m_dataSizes;
+    int m_numDof;
 
     std::vector<Object> &m_vertexData;
     int m_idxCount{};
@@ -123,11 +131,13 @@ private:
 
     void onKeyPressed(int key, int action);
 
-    void initComputeBindings(size_t input_size, size_t idx_size, size_t data_size, int color);
+    void initComputeBindings(size_t n_dof, size_t idx_size, size_t data_size, int color);
 
-    void initComputeBuffersAndTextures(size_t input_size, std::vector<Vector32i> &id, std::vector<VectorXR>  &data);
+    void setComputePBindings();
 
-    void createComputePipeline();
+    void initComputeBuffersAndTextures(size_t n_dof, std::vector<Vector32i> &id, std::vector<VectorXR>  &data);
+
+    void createComputePipeline(ComputeShader shader);
 
     uint32_t respectAlignment(uint32_t size);
 };

@@ -44,7 +44,7 @@ int main() {
     PhysicManagerPBD physicManager(app);
 
 
-    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/plano.obj", objectData);
+    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/triangle.obj", objectData);
 
     for(auto &obj : objectData){
         obj.localToWorld();

@@ -1,11 +1,11 @@
-@group(0) @binding(0) var<storage, read> inputBuffer: array<f32>;
-@group(0) @binding(1) var<storage, read_write> outputBuffer: array<f32>;
+@group(0) @binding(0) var<storage, read> piBuffer: array<f32>;
+@group(0) @binding(1) var<storage, read_write> pfBuffer: array<f32>;
 @group(0) @binding(2) var<storage, read> idxBuffer: array<u32>;
 @group(0) @binding(3) var<storage, read> dataBuffer: array<f32>;
 @group(0) @binding(4) var<storage, read> dataSize: u32;
 
 @compute @workgroup_size(32)
-fn stretchConstraint(@builtin(global_invocation_id) id: vec3<u32>) {
+fn projectStretchConstraint(@builtin(global_invocation_id) id: vec3<u32>) {
 
     if(id.x >= dataSize){
         return;
@@ -15,14 +15,14 @@ fn stretchConstraint(@builtin(global_invocation_id) id: vec3<u32>) {
     let idxB = idxBuffer[(id.x * 2u) + 1u];
 
     //Load the stencil positions
-    let Ax = inputBuffer[idxA];
-    let Ay = inputBuffer[idxA + 1u];
-    let Az = inputBuffer[idxA + 2u];
+    let Ax = piBuffer[idxA];
+    let Ay = piBuffer[idxA + 1u];
+    let Az = piBuffer[idxA + 2u];
     var nodeA = vec3<f32>(Ax, Ay, Az);
 
-    let Bx = inputBuffer[idxB];
-    let By = inputBuffer[idxB + 1u];
-    let Bz = inputBuffer[idxB + 2u];
+    let Bx = piBuffer[idxB];
+    let By = piBuffer[idxB + 1u];
+    let Bz = piBuffer[idxB + 2u];
     var nodeB = vec3<f32>(Bx, By, Bz);
 
     //Load the stencil data
@@ -41,12 +41,12 @@ fn stretchConstraint(@builtin(global_invocation_id) id: vec3<u32>) {
     var correctionB = wB * correction;
 
     //Load the solution
-    outputBuffer[idxA] -= correctionA.x;
-    outputBuffer[idxA + 1u] -= correctionA.y;
-    outputBuffer[idxA + 2u] -= correctionA.z;
+    pfBuffer[idxA] -= correctionA.x;
+    pfBuffer[idxA + 1u] -= correctionA.y;
+    pfBuffer[idxA + 2u] -= correctionA.z;
 
-    outputBuffer[idxB] += correctionB.x;
-    outputBuffer[idxB + 1u] += correctionB.y;
-    outputBuffer[idxB + 2u] += correctionB.z;
+    pfBuffer[idxB] += correctionB.x;
+    pfBuffer[idxB + 1u] += correctionB.y;
+    pfBuffer[idxB + 2u] += correctionB.z;
 
 }

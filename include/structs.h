@@ -18,6 +18,17 @@ struct CameraState {
     glm::vec3 up;
 };
 
+struct StepData{
+    uint32_t num_dof;
+    float time_step;
+};
+
+enum ComputeShader{
+    COMPUTE_P,
+    COMPUTE_V,
+    PROJECT_STRETCH,
+};
+
 struct Edge {
     int a;
     int b;
