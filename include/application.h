@@ -27,9 +27,11 @@ public:
     void initCompute(VectorXR &x, VectorXR &v, VectorXR &f, std::vector<Vector32i> &id, std::vector<VectorXR>  &data,
                      float timeStep);
 
-    void computeP();
+    void computeSimulation(ComputeOperation compute_operation);
 
-    VectorXR onComputeOpt(int color_count);
+    void onComputeOpt(int color_count);
+
+    void readP(VectorXR &p);
 
     void onCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector<VectorXR>  &data, size_t stencil_size);
 
@@ -131,13 +133,13 @@ private:
 
     void onKeyPressed(int key, int action);
 
-    void initComputeBindings(size_t n_dof, size_t idx_size, size_t data_size, int color);
+    void setConstraintBindings(size_t n_dof, size_t idx_size, size_t data_size, int color);
 
-    void setComputePBindings();
+    void setSimulationBindings(ComputeOperation compute_operation);
 
-    void initComputeBuffersAndTextures(size_t n_dof, std::vector<Vector32i> &id, std::vector<VectorXR>  &data);
+    void initComputeBuffers(size_t n_dof, std::vector<Vector32i> &id, std::vector<VectorXR>  &data);
 
-    void createComputePipeline(ComputeShader shader);
+    void createComputePipeline(ComputeOperation shader);
 
     uint32_t respectAlignment(uint32_t size);
 };

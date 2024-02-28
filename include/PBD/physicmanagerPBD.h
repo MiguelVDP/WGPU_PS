@@ -26,7 +26,7 @@ public:
         timeStep = 0.25f;
         gravity = Vector3R(0.0f, -9.8f, 0.0f);
         numDoFs = 0;
-        simIterations = 1;
+        simIterations = 2;
     }
 
     void initialize();

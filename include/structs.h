@@ -23,7 +23,7 @@ struct StepData{
     float time_step;
 };
 
-enum ComputeShader{
+enum ComputeOperation{
     COMPUTE_P,
     COMPUTE_V,
     PROJECT_STRETCH,

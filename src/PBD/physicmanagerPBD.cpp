@@ -94,7 +94,6 @@ void PhysicManagerPBD::fixedUpdateGPU() {
     if (paused) return;
 
     VectorXR x(numDoFs); //Actual position vector
-    VectorXR v(numDoFs); //Velocity vector
     int stretchColorCount = 0;
 
     for (auto &sim: simObjs) {
@@ -102,17 +101,17 @@ void PhysicManagerPBD::fixedUpdateGPU() {
         sim->getStretchColorCount(stretchColorCount);
     }
 
+    app.computeSimulation(ComputeOperation::COMPUTE_P);
     //TODO Collisions
 
     //Apply constraints
     //Stretch constraint
     VectorXR p(numDoFs);
     for (int i = 0; i < simIterations; ++i) {
-        p = app.onComputeOpt(stretchColorCount);
+        app.onComputeOpt(stretchColorCount);
     }
-
-    //Correct velocities
-    v = (p - x) / timeStep;
+    app.readP(p);
+    app.computeSimulation(ComputeOperation::COMPUTE_V);
 
 //    std::cout << "----------------------------- \n Pout:" << std::endl;
 //    for (int i = 0; i < p.size(); i += 3) {
@@ -120,7 +119,6 @@ void PhysicManagerPBD::fixedUpdateGPU() {
 //    }
 
     for (auto &sim: simObjs) {
-        sim->setVelocity(v);
         sim->setPosition(p);
     }
 

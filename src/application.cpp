@@ -261,7 +261,7 @@ bool Application::initWindowAndDevice(int width, int height) {
 
     //Compute limits
     //Compute Buffers limits
-    requiredLimits.limits.maxStorageBuffersPerShaderStage = 5;
+    requiredLimits.limits.maxStorageBuffersPerShaderStage = 6;
     requiredLimits.limits.maxStorageBufferBindingSize = supportedLimits.limits.maxStorageBufferBindingSize;
 
     //Compute Texture limit
@@ -476,9 +476,13 @@ Application::Application(std::vector<Object> &vData) :
 }
 
 void Application::onCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector<VectorXR> &data, size_t stencil_size){
+    static_cast<void>(p);
+    static_cast<void>(id);
+    static_cast<void>(data);
+    static_cast<void>(stencil_size);
 }
 
-void Application::createComputePipeline(ComputeShader shader) {
+void Application::createComputePipeline(ComputeOperation shader) {
     std::string entry_point;
     switch (shader) {
         case PROJECT_STRETCH:
@@ -486,9 +490,12 @@ void Application::createComputePipeline(ComputeShader shader) {
             entry_point = "projectStretchConstraint";
             break;
         case COMPUTE_P:
-            m_computeShaderModule = ResourceManager::loadShaderModule(RESOURCE_DIR "/computeP.wgsl", m_device);
+            m_computeShaderModule = ResourceManager::loadShaderModule(RESOURCE_DIR "/ComputeP.wgsl", m_device);
             entry_point = "computePredictedPos";
+            break;
         case COMPUTE_V:
+            m_computeShaderModule = ResourceManager::loadShaderModule(RESOURCE_DIR "/computeV.wgsl", m_device);
+            entry_point = "update_V_X";
             break;
     }
 
@@ -499,7 +506,7 @@ void Application::createComputePipeline(ComputeShader shader) {
     m_computePipeline = m_device.createComputePipeline(computePipelineDesc);
 }
 
-void Application::initComputeBindings(size_t n_dof, size_t idx_size, size_t data_size, int color) {
+void Application::setConstraintBindings(size_t n_dof, size_t idx_size, size_t data_size, int color) {
 
     //We set the amount of layout entries
     m_computeBindingLayoutEntries.resize(5);
@@ -592,7 +599,7 @@ void Application::initComputeBindings(size_t n_dof, size_t idx_size, size_t data
 }
 
 void
-Application::initComputeBuffersAndTextures(size_t n_dof, std::vector<Vector32i> &id, std::vector<VectorXR> &data) {
+Application::initComputeBuffers(size_t n_dof, std::vector<Vector32i> &id, std::vector<VectorXR> &data) {
 
     //Map Buffer for reading the texture
     BufferDescriptor buffDesc;
@@ -677,13 +684,14 @@ void Application::initCompute(VectorXR &x, VectorXR &v, VectorXR &f, std::vector
     m_numDof = int(x.size());
     size_t color_count = id.size();
 
-    initComputeBuffersAndTextures(m_numDof, id, data);
+    initComputeBuffers(m_numDof, id, data);
 
     VectorXR zero(m_numDof);
     zero.setZero();
     m_queue.writeBuffer(m_piBuffer, 0, zero.data(), m_numDof * sizeof(float));
     m_queue.writeBuffer(m_pfBuffer, 0, zero.data(), m_numDof * sizeof(float));
     m_queue.writeBuffer(m_xBuffer, 0, x.data(), m_numDof * sizeof(float));
+    m_queue.writeBuffer(m_vBuffer, 0, v.data(), m_numDof * sizeof(float));
     m_queue.writeBuffer(m_fBuffer, 0, f.data(), m_numDof * sizeof(float));
     StepData stepData{};
     stepData.num_dof = m_numDof;
@@ -705,7 +713,7 @@ void Application::initCompute(VectorXR &x, VectorXR &v, VectorXR &f, std::vector
 
 }
 
-VectorXR Application::onComputeOpt(int color_count) {
+void Application::onComputeOpt(int color_count) {
 
     CommandEncoderDescriptor encoderDesc = Default;
     CommandEncoder encoder = nullptr;
@@ -716,8 +724,8 @@ VectorXR Application::onComputeOpt(int color_count) {
 
     for (int i = 0; i < color_count; ++i) {
 
-        initComputeBindings(m_numDof, m_idxSizes[i], m_dataSizes[i], i);
-        createComputePipeline(ComputeShader::PROJECT_STRETCH);
+        setConstraintBindings(m_numDof, m_idxSizes[i], m_dataSizes[i], i);
+        createComputePipeline(ComputeOperation::PROJECT_STRETCH);
 
         encoder = m_device.createCommandEncoder(encoderDesc);
         m_computePass = encoder.beginComputePass(computePassDesc);
@@ -725,17 +733,26 @@ VectorXR Application::onComputeOpt(int color_count) {
         m_computePass.setBindGroup(0, m_computeBindGroup, 0, nullptr);
         m_computePass.dispatchWorkgroups(64, 1, 1);
         m_computePass.end();
-        if (i == color_count - 1) {
-            //Now we want to copy the texture to our mapped buffer
-            encoder.copyBufferToBuffer(m_pfBuffer, 0, m_mapBuffer, 0, m_numDof * sizeof(float));
-        } else {
+        if (i != color_count - 1) {
             encoder.copyBufferToBuffer(m_pfBuffer, 0, m_piBuffer, 0, m_numDof * sizeof(float));
         }
         CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
         m_queue.submit(commands);
     }
+}
 
-    VectorXR p(m_numDof);
+void Application::readP(VectorXR &p){
+
+    CommandEncoderDescriptor encoderDesc = Default;
+    CommandEncoder encoder = nullptr;
+
+    encoder = m_device.createCommandEncoder(encoderDesc);
+    //Now we want to copy the texture to our mapped buffer
+    encoder.copyBufferToBuffer(m_pfBuffer, 0, m_mapBuffer, 0, m_numDof * sizeof(float));
+
+    CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
+    m_queue.submit(commands);
+
 
     bool done = false;
     auto handle = m_mapBuffer.mapAsync(MapMode::Read, 0, m_numDof * sizeof(float),
@@ -744,11 +761,6 @@ VectorXR Application::onComputeOpt(int color_count) {
             const auto *output = (const float *) m_mapBuffer.getConstMappedRange(0, m_numDof * sizeof(float ));
             Eigen::Map<const VectorXR> newP(output, m_numDof);
             p = newP;
-            std::cout << "----------------------------- \n Pout:" << std::endl;
-            for (int i = 0; i < newP.size(); i += 3) {
-                std::cout << "(" << newP[i] << ", " << newP[i + 1] << ", " << newP[i + 2] << ")" << std::endl;
-            }
-
             m_mapBuffer.unmap();
         }
         done = true;
@@ -771,10 +783,10 @@ VectorXR Application::onComputeOpt(int color_count) {
     wgpuQueueRelease(m_queue);
     wgpuComputePassEncoderRelease(computePass);
 #endif
-    return p;
+
 }
 
-void Application::computeP() {
+void Application::computeSimulation(ComputeOperation compute_operation) {
     CommandEncoderDescriptor encoderDesc = Default;
     CommandEncoder encoder = nullptr;
 
@@ -783,8 +795,8 @@ void Application::computeP() {
     computePassDesc.timestampWrites = nullptr;
 
 
-    setComputePBindings();
-    createComputePipeline(ComputeShader::COMPUTE_P);
+    setSimulationBindings(compute_operation);
+    createComputePipeline(compute_operation);
 
     encoder = m_device.createCommandEncoder(encoderDesc);
     m_computePass = encoder.beginComputePass(computePassDesc);
@@ -796,18 +808,33 @@ void Application::computeP() {
     m_queue.submit(commands);
 }
 
-void Application::setComputePBindings() {
+void Application::setSimulationBindings(ComputeOperation compute_operation) {
+    size_t binding_count;
+    switch (compute_operation) {
+        case COMPUTE_P:
+            binding_count = 6;
+            break;
+        case COMPUTE_V:
+            binding_count = 4;
+            break;
+        case PROJECT_STRETCH:
+            break;
+    }
+
     //We set the amount of layout entries
-    m_computeBindingLayoutEntries.resize(5);
+    m_computeBindingLayoutEntries.resize(binding_count);
 
     //X Buffer
     m_computeBindingLayoutEntries[0].binding = 0;
     m_computeBindingLayoutEntries[0].visibility = ShaderStage::Compute;
     m_computeBindingLayoutEntries[0].buffer.minBindingSize = m_numDof * sizeof(float);
-    m_computeBindingLayoutEntries[0].buffer.type = BufferBindingType::ReadOnlyStorage;
+    if(compute_operation == ComputeOperation::COMPUTE_P)
+        m_computeBindingLayoutEntries[0].buffer.type = BufferBindingType::ReadOnlyStorage;
+    else
+        m_computeBindingLayoutEntries[0].buffer.type = BufferBindingType::Storage;
     m_computeBindingLayoutEntries[0].buffer.hasDynamicOffset = false;
 
-    //P Buffer
+    //Pf Buffer
     m_computeBindingLayoutEntries[1].binding = 1;
     m_computeBindingLayoutEntries[1].visibility = ShaderStage::Compute;
     m_computeBindingLayoutEntries[1].buffer.minBindingSize = m_numDof * sizeof(float);
@@ -821,19 +848,28 @@ void Application::setComputePBindings() {
     m_computeBindingLayoutEntries[2].buffer.type = BufferBindingType::Storage;
     m_computeBindingLayoutEntries[2].buffer.hasDynamicOffset = false;
 
-    //F Buffer
+    //Step Data Buffer
     m_computeBindingLayoutEntries[3].binding = 3;
     m_computeBindingLayoutEntries[3].visibility = ShaderStage::Compute;
-    m_computeBindingLayoutEntries[3].buffer.minBindingSize = m_numDof * sizeof(float );
+    m_computeBindingLayoutEntries[3].buffer.minBindingSize = sizeof(StepData);
     m_computeBindingLayoutEntries[3].buffer.type = BufferBindingType::ReadOnlyStorage;
     m_computeBindingLayoutEntries[3].buffer.hasDynamicOffset = false;
 
-    //Step Data Buffer
-    m_computeBindingLayoutEntries[4].binding = 4;
-    m_computeBindingLayoutEntries[4].visibility = ShaderStage::Compute;
-    m_computeBindingLayoutEntries[4].buffer.minBindingSize = sizeof(StepData);
-    m_computeBindingLayoutEntries[4].buffer.type = BufferBindingType::ReadOnlyStorage;
-    m_computeBindingLayoutEntries[4].buffer.hasDynamicOffset = false;
+    if(compute_operation == ComputeOperation::COMPUTE_P){
+        //F Buffer
+        m_computeBindingLayoutEntries[4].binding = 4;
+        m_computeBindingLayoutEntries[4].visibility = ShaderStage::Compute;
+        m_computeBindingLayoutEntries[4].buffer.minBindingSize = m_numDof * sizeof(float);
+        m_computeBindingLayoutEntries[4].buffer.type = BufferBindingType::ReadOnlyStorage;
+        m_computeBindingLayoutEntries[4].buffer.hasDynamicOffset = false;
+
+        //Pi Buffer
+        m_computeBindingLayoutEntries[5].binding = 5;
+        m_computeBindingLayoutEntries[5].visibility = ShaderStage::Compute;
+        m_computeBindingLayoutEntries[5].buffer.minBindingSize = m_numDof * sizeof(float);
+        m_computeBindingLayoutEntries[5].buffer.type = BufferBindingType::Storage;
+        m_computeBindingLayoutEntries[5].buffer.hasDynamicOffset = false;
+    }
 
     //We create the layout group
     BindGroupLayoutDescriptor bindGroupLayoutDesc;
@@ -848,7 +884,7 @@ void Application::setComputePBindings() {
     m_computePipelineLayout = m_device.createPipelineLayout(pipelineLayoutDesc);
 
     //Now we create the bind group
-    std::vector<BindGroupEntry> entries(5, Default);
+    std::vector<BindGroupEntry> entries(binding_count, Default);
 
     //X Buffer
     entries[0].binding = 0;
@@ -856,9 +892,9 @@ void Application::setComputePBindings() {
     entries[0].size = sizeof(float) * m_numDof;
     entries[0].offset = 0;
 
-    //P Buffer
+    //Pf Buffer
     entries[1].binding = 1;
-    entries[1].buffer = m_piBuffer;
+    entries[1].buffer = m_pfBuffer;
     entries[1].size = sizeof(float) * m_numDof;
     entries[1].offset = 0;
 
@@ -868,17 +904,25 @@ void Application::setComputePBindings() {
     entries[2].size = sizeof(uint32_t) * m_numDof;
     entries[2].offset = 0;
 
-    //F Buffer
+    //Step Data Buffer
     entries[3].binding = 3;
-    entries[3].buffer = m_fBuffer   ;
-    entries[3].size = sizeof(float) * m_numDof;
+    entries[3].buffer = m_stepDataBuffer;
+    entries[3].size = sizeof(StepData);
     entries[3].offset = 0;
 
-    //Size Buffer
-    entries[4].binding = 4;
-    entries[4].buffer = m_stepDataBuffer;
-    entries[4].size = sizeof(StepData);
-    entries[4].offset = 0;
+    if(compute_operation == ComputeOperation::COMPUTE_P){
+        //F Buffer
+        entries[4].binding = 4;
+        entries[4].buffer = m_fBuffer;
+        entries[4].size = sizeof(float) * m_numDof;
+        entries[4].offset = 0;
+
+        //Pi Buffer
+        entries[5].binding = 5;
+        entries[5].buffer = m_piBuffer;
+        entries[5].size = sizeof(float) * m_numDof;
+        entries[5].offset = 0;
+    }
 
     BindGroupDescriptor bindGroupDesc;
     bindGroupDesc.layout = m_computeBindGroupLayout;
