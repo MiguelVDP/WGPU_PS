@@ -44,7 +44,7 @@ int main() {
     PhysicManagerPBD physicManager(app);
 
 
-    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/triangle.obj", objectData);
+    ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/plano.obj", objectData);
 
     for(auto &obj : objectData){
         obj.localToWorld();
@@ -69,12 +69,15 @@ int main() {
     app.m_mvpUniforms.modelMatrix = glm::mat4(1.0f);
     app.m_mvpUniforms.model2Matrix = glm::mat4(1.0f);
 
-    constexpr std::chrono::milliseconds fixedTimeStep(33);
+    constexpr std::chrono::milliseconds fixed_time_step(33);
+    constexpr std::chrono::milliseconds fixed_update_max(50);
 
     // Initialize variables for tracking time
     auto currentTime = std::chrono::high_resolution_clock::now();
     auto previousTime = currentTime;
     std::chrono::milliseconds lag(0);
+    std::chrono::milliseconds fixed_update_timer(0);
+    auto timer = std::chrono::high_resolution_clock::now();
 
 //    physicManager.fixedUpdateGPU();
 
@@ -93,7 +96,10 @@ int main() {
         lag += elapsedTime;
 
         //////    FIXED UPDATE    //////
-        while (lag >= fixedTimeStep) {
+        while (lag >= fixed_time_step) {
+            if(fixed_update_timer == std::chrono::milliseconds(0)){
+                timer = std::chrono::high_resolution_clock::now();
+            }
             // Perform fixed update tasks here
             prfm_prev = std::chrono::high_resolution_clock::now();
 
@@ -104,7 +110,13 @@ int main() {
             std::cout << "Physic step: " << elapsed.count() << std::endl;
 
             // Decrease lag by the fixed time step
-            lag -= fixedTimeStep;
+            lag -= fixed_time_step;
+            fixed_update_timer += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - timer);
+            if(fixed_update_timer >= fixed_update_max){
+                lag = std::chrono::milliseconds(0);
+                fixed_update_timer = std::chrono::milliseconds(0);
+                break;
+            }
         }
 //        auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
 //        transformVertex(app, t);
