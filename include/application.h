@@ -24,16 +24,15 @@ public:
     // A function called only once at the very end.
     void onFinish();
 
-    void initCompute(VectorXR &x, VectorXR &v, VectorXR &f, std::vector<Vector32i> &id, std::vector<VectorXR>  &data,
-                     float timeStep);
+    void initSimulationStruct(VectorXR &x, VectorXR &v, VectorXR &f, float timeStep);
+
+    void initConstraintsStruct(ConstraintType constraint, std::vector<Vector32i> &id, std::vector<VectorXR> &data);
 
     void computeSimulation(ComputeOperation compute_operation);
 
-    void onComputeOpt(int color_count);
+    void computeStretch(int color_count);
 
     void readP(VectorXR &p);
-
-    void onCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector<VectorXR>  &data, size_t stencil_size);
 
     bool isRunning() { return !glfwWindowShouldClose(m_window); }
 
@@ -57,9 +56,16 @@ public:
     std::vector<wgpu::Buffer> m_stenCountBuffer;
     std::vector<wgpu::Buffer> m_dataBuffer;
     std::vector<wgpu::Buffer> m_idxBuffer;
+
+    //Compute structs (bindings & pipelines)
+    SimulationStepStruct m_computeP_BindPipe;
+    SimulationStepStruct m_computeV_BindPipe;
+    std::vector<SimulationStepStruct> m_stretchConstraint_BindPipe;
+
+    //Compute Data
     std::vector<int> m_idxSizes;
     std::vector<int> m_dataSizes;
-    int m_numDof;
+    int m_numDof{};
 
     std::vector<Object> &m_vertexData;
     int m_idxCount{};
@@ -101,11 +107,11 @@ private:
 
     //GPU compute values
     wgpu::ComputePassEncoder m_computePass = nullptr;
-    wgpu::ComputePipeline m_computePipeline = nullptr;
+//    wgpu::ComputePipeline m_computePipeline = nullptr;
     wgpu::ShaderModule m_computeShaderModule = nullptr;
     std::vector<wgpu::BindGroupLayoutEntry> m_computeBindingLayoutEntries;
     wgpu::BindGroupLayout m_computeBindGroupLayout = nullptr;
-    wgpu::BindGroup m_computeBindGroup = nullptr;
+//    wgpu::BindGroup m_computeBindGroup = nullptr;
     wgpu::PipelineLayout m_computePipelineLayout = nullptr;
 
     //Camera view variables
@@ -133,13 +139,11 @@ private:
 
     void onKeyPressed(int key, int action);
 
-    void setConstraintBindings(size_t n_dof, size_t idx_size, size_t data_size, int color);
+    wgpu::BindGroup createConstraintBindings(size_t idx_size, size_t data_size, int color);
 
-    void setSimulationBindings(ComputeOperation compute_operation);
+    wgpu::BindGroup createSimulationBindings(ComputeOperation compute_operation);
 
-    void initComputeBuffers(size_t n_dof, std::vector<Vector32i> &id, std::vector<VectorXR>  &data);
-
-    void createComputePipeline(ComputeOperation shader);
+    wgpu::ComputePipeline createComputePipeline(ComputeOperation shader);
 
     uint32_t respectAlignment(uint32_t size);
 };

@@ -41,6 +41,7 @@ add_executable(WGPU_PS
         src/resourceManager.cpp
         src/spring.cpp
         include/PBD/bendGroupPBD.h
+        include/executionTimer.h
 
 )
 

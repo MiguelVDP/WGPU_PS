@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <map>
 #include <functional>
+#include <webgpu/webgpu.hpp>
 
 struct MyUniforms {
     glm::mat4 projectionMatrix;
@@ -23,10 +24,21 @@ struct StepData{
     float time_step;
 };
 
+
+enum ConstraintType{
+    STRETCH,
+    BEND
+};
+
 enum ComputeOperation{
     COMPUTE_P,
     COMPUTE_V,
     PROJECT_STRETCH,
+};
+
+struct SimulationStepStruct{
+    wgpu::ComputePipeline pipeline;
+    wgpu::BindGroup bindGroup;
 };
 
 struct Edge {

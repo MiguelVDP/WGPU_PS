@@ -10,6 +10,7 @@
 #include <PBD/physicmanagerPBD.h>
 #include <PBD/massSpringPBD.h>
 #include <chrono>
+#include <executionTimer.h>
 
 using namespace wgpu;
 namespace fs = std::filesystem;
@@ -46,7 +47,7 @@ int main() {
 
     ResourceManager::loadGeometryFromObj(RESOURCE_DIR "/plano.obj", objectData);
 
-    for(auto &obj : objectData){
+    for (auto &obj: objectData) {
         obj.localToWorld();
     }
 
@@ -79,12 +80,6 @@ int main() {
     std::chrono::milliseconds fixed_update_timer(0);
     auto timer = std::chrono::high_resolution_clock::now();
 
-//    physicManager.fixedUpdateGPU();
-
-    auto prfm_timer = std::chrono::high_resolution_clock::now();
-    auto prfm_prev = prfm_timer;
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prfm_timer - prfm_prev);
-
     while (app.isRunning()) {
 
         currentTime = std::chrono::high_resolution_clock::now();
@@ -97,38 +92,32 @@ int main() {
 
         //////    FIXED UPDATE    //////
         while (lag >= fixed_time_step) {
-            if(fixed_update_timer == std::chrono::milliseconds(0)){
+            if (fixed_update_timer == std::chrono::milliseconds(0)) {
                 timer = std::chrono::high_resolution_clock::now();
             }
             // Perform fixed update tasks here
-            prfm_prev = std::chrono::high_resolution_clock::now();
+            ExecutionTimer<std::chrono::milliseconds> physic_timer;
 
             physicManager.fixedUpdateGPU();
 
-            prfm_timer = std::chrono::high_resolution_clock::now();
-            elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prfm_timer - prfm_prev);
-            std::cout << "Physic step: " << elapsed.count() << std::endl;
+            physic_timer.stop("Physic step: ");
 
             // Decrease lag by the fixed time step
             lag -= fixed_time_step;
-            fixed_update_timer += std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - timer);
-            if(fixed_update_timer >= fixed_update_max){
+            fixed_update_timer += std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now() - timer);
+            if (fixed_update_timer >= fixed_update_max) {
                 lag = std::chrono::milliseconds(0);
                 fixed_update_timer = std::chrono::milliseconds(0);
                 break;
             }
         }
-//        auto t = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
-//        transformVertex(app, t);
-//        transformVertex2(app, t);
 
-        prfm_prev = std::chrono::high_resolution_clock::now();
+        ExecutionTimer<std::chrono::milliseconds> render_timer;
 
         app.onFrame();
 
-        prfm_timer = std::chrono::high_resolution_clock::now();
-        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prfm_timer - prfm_prev);
-        std::cout << "Render: " << elapsed.count() << std::endl;
+        render_timer.stop("Render: ");
     }
 
     app.onFinish();

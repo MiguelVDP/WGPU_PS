@@ -27,7 +27,9 @@ void PhysicManagerPBD::initialize() {
         sim->getStretchConstraintData(stretchCGData);
     }
 
-    app.initCompute(x, v, fExt, stretchCG, stretchCGData, timeStep);
+//    app.initCompute(x, v, fExt, stretchCG, stretchCGData, timeStep);
+    app.initSimulationStruct(x, v, fExt, timeStep);
+    app.initConstraintsStruct(ConstraintType::STRETCH, stretchCG, stretchCGData);
 }
 
 void PhysicManagerPBD::fixedUpdate() {
@@ -53,7 +55,7 @@ void PhysicManagerPBD::fixedUpdate() {
     //TODO Collisions
 
     //Apply constraints
-    for(int it = 0 ; it < simIterations; it++){
+    for (int it = 0; it < simIterations; it++) {
         for (auto &sim: simObjs) {
             sim->projectConstraints(p);
         }
@@ -108,7 +110,7 @@ void PhysicManagerPBD::fixedUpdateGPU() {
     //Stretch constraint
     VectorXR p(numDoFs);
     for (int i = 0; i < simIterations; ++i) {
-        app.onComputeOpt(stretchColorCount);
+        app.computeStretch(stretchColorCount);
     }
     app.readP(p);
     app.computeSimulation(ComputeOperation::COMPUTE_V);

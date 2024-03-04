@@ -1,4 +1,5 @@
 #include "application.h"
+#include <executionTimer.h>
 
 using namespace wgpu;
 
@@ -165,9 +166,13 @@ void Application::onFinish() {
         if (m_idxBuffer[i] != nullptr) m_idxBuffer[i].release();
         if (m_dataBuffer[i] != nullptr) m_dataBuffer[i].release();
         if (m_stenCountBuffer[i] != nullptr) m_stenCountBuffer[i].release();
+        if (m_stretchConstraint_BindPipe[i].bindGroup != nullptr) m_stretchConstraint_BindPipe[i].bindGroup.release();
+        if (m_stretchConstraint_BindPipe[i].pipeline != nullptr) m_stretchConstraint_BindPipe[i].pipeline.release();
     }
-    if (m_computeBindGroup != nullptr) m_computeBindGroup.release();
-    if (m_computePipeline != nullptr) m_computePipeline.release();
+    if (m_computeP_BindPipe.bindGroup != nullptr) m_computeP_BindPipe.bindGroup.release();
+    if (m_computeP_BindPipe.pipeline != nullptr) m_computeP_BindPipe.pipeline.release();
+    if (m_computeV_BindPipe.bindGroup != nullptr) m_computeV_BindPipe.bindGroup.release();
+    if (m_computeV_BindPipe.pipeline != nullptr) m_computeV_BindPipe.pipeline.release();
     if (m_computeBindGroupLayout != nullptr) m_computeBindGroupLayout.release();
 }
 
@@ -467,22 +472,16 @@ void Application::onKeyPressed(int key, int action) {
     }
 }
 
-Application::Application(std::vector<Object> &vData) :
-        m_vertexData(vData) {
+Application::Application(std::vector<Object> &vData) : m_computeP_BindPipe({nullptr, nullptr}),
+                                                       m_computeV_BindPipe({nullptr, nullptr}), m_vertexData(vData) {
     m_camState.pos = glm::vec3(0.f);
     m_camState.front = glm::vec3(0.f, 0.f, -1.f);
     m_camState.up = glm::vec3(0.f, 1.f, 0.f);
     m_mvpUniforms.viewMatrix = glm::lookAt(m_camState.pos, m_camState.front, m_camState.up);
+    m_numDof = 0;
 }
 
-void Application::onCompute(VectorXR &p, std::vector<Vector32i> &id, std::vector<VectorXR> &data, size_t stencil_size){
-    static_cast<void>(p);
-    static_cast<void>(id);
-    static_cast<void>(data);
-    static_cast<void>(stencil_size);
-}
-
-void Application::createComputePipeline(ComputeOperation shader) {
+ComputePipeline Application::createComputePipeline(ComputeOperation shader) {
     std::string entry_point;
     switch (shader) {
         case PROJECT_STRETCH:
@@ -503,10 +502,10 @@ void Application::createComputePipeline(ComputeOperation shader) {
     computePipelineDesc.compute.entryPoint = entry_point.c_str();
     computePipelineDesc.compute.module = m_computeShaderModule;
     computePipelineDesc.layout = m_computePipelineLayout;
-    m_computePipeline = m_device.createComputePipeline(computePipelineDesc);
+    return m_device.createComputePipeline(computePipelineDesc);
 }
 
-void Application::setConstraintBindings(size_t n_dof, size_t idx_size, size_t data_size, int color) {
+BindGroup Application::createConstraintBindings(size_t idx_size, size_t data_size, int color) {
 
     //We set the amount of layout entries
     m_computeBindingLayoutEntries.resize(5);
@@ -514,14 +513,14 @@ void Application::setConstraintBindings(size_t n_dof, size_t idx_size, size_t da
     //Pi Buffer
     m_computeBindingLayoutEntries[0].binding = 0;
     m_computeBindingLayoutEntries[0].visibility = ShaderStage::Compute;
-    m_computeBindingLayoutEntries[0].buffer.minBindingSize = n_dof * sizeof(float);
+    m_computeBindingLayoutEntries[0].buffer.minBindingSize = m_numDof * sizeof(float);
     m_computeBindingLayoutEntries[0].buffer.type = BufferBindingType::ReadOnlyStorage;
     m_computeBindingLayoutEntries[0].buffer.hasDynamicOffset = false;
 
     //Pf Buffer
     m_computeBindingLayoutEntries[1].binding = 1;
     m_computeBindingLayoutEntries[1].visibility = ShaderStage::Compute;
-    m_computeBindingLayoutEntries[1].buffer.minBindingSize = n_dof * sizeof(float);
+    m_computeBindingLayoutEntries[1].buffer.minBindingSize = m_numDof * sizeof(float);
     m_computeBindingLayoutEntries[1].buffer.type = BufferBindingType::Storage;
     m_computeBindingLayoutEntries[1].buffer.hasDynamicOffset = false;
 
@@ -563,13 +562,13 @@ void Application::setConstraintBindings(size_t n_dof, size_t idx_size, size_t da
     //Pi Buffer
     entries[0].binding = 0;
     entries[0].buffer = m_piBuffer;
-    entries[0].size = sizeof(float) * n_dof;
+    entries[0].size = sizeof(float) * m_numDof;
     entries[0].offset = 0;
 
     //Pf Buffer
     entries[1].binding = 1;
     entries[1].buffer = m_pfBuffer;
-    entries[1].size = sizeof(float) * n_dof;
+    entries[1].size = sizeof(float) * m_numDof;
     entries[1].offset = 0;
 
     //Idx Buffer
@@ -594,79 +593,7 @@ void Application::setConstraintBindings(size_t n_dof, size_t idx_size, size_t da
     bindGroupDesc.layout = m_computeBindGroupLayout;
     bindGroupDesc.entryCount = entries.size();
     bindGroupDesc.entries = (WGPUBindGroupEntry *) entries.data();
-    m_computeBindGroup = m_device.createBindGroup(bindGroupDesc);
-
-}
-
-void
-Application::initComputeBuffers(size_t n_dof, std::vector<Vector32i> &id, std::vector<VectorXR> &data) {
-
-    //Map Buffer for reading the texture
-    BufferDescriptor buffDesc;
-
-    //Map Buffer
-    buffDesc.mappedAtCreation = false;
-    buffDesc.size = n_dof * sizeof(float);
-    buffDesc.usage = BufferUsage::CopyDst | BufferUsage::MapRead;
-    buffDesc.mappedAtCreation = false;
-    m_mapBuffer = m_device.createBuffer(buffDesc);
-
-    //X Buffer
-    buffDesc.size = n_dof * sizeof(float);
-    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopySrc | BufferUsage::CopyDst;
-    m_xBuffer = m_device.createBuffer(buffDesc);
-
-    //Pi Buffer
-    buffDesc.size = n_dof * sizeof(float);
-    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopyDst;
-    m_piBuffer = m_device.createBuffer(buffDesc);
-
-    //Pf Buffer
-    buffDesc.size = n_dof * sizeof(float);
-    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopySrc | BufferUsage::CopyDst;
-    m_pfBuffer = m_device.createBuffer(buffDesc);
-
-    //V Buffer
-    buffDesc.size = n_dof * sizeof(float);
-    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopyDst;
-    m_vBuffer = m_device.createBuffer(buffDesc);
-
-    //F Buffer
-    buffDesc.size = n_dof * sizeof(float);
-    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopyDst;
-    m_fBuffer = m_device.createBuffer(buffDesc);
-
-    //Time Step Buffer
-    buffDesc.size =sizeof(StepData);
-    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopyDst;
-    m_stepDataBuffer = m_device.createBuffer(buffDesc);
-
-    //We now create a buffer for each color
-    size_t color_count = id.size();
-    m_idxBuffer.reserve(color_count);
-    m_dataBuffer.reserve(color_count);
-    m_stenCountBuffer.reserve(color_count);
-
-    size_t idx_size, data_size;
-    for (size_t i = 0; i < color_count; ++i) {
-        idx_size = id[i].size();
-        data_size = data[i].size();
-
-        //Data Buffer
-        buffDesc.size = data_size * sizeof(float);
-        buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage;
-        m_dataBuffer[i] = m_device.createBuffer(buffDesc);
-
-        //Index Buffer
-        buffDesc.size = idx_size * sizeof(uint32_t);
-        buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage;
-        m_idxBuffer[i] = m_device.createBuffer(buffDesc);
-
-        //Compute size buffer
-        buffDesc.size = sizeof(uint32_t);
-        buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage;
-        m_stenCountBuffer[i] = m_device.createBuffer(buffDesc);
-    }
+    return m_device.createBindGroup(bindGroupDesc);
 
 }
 
@@ -678,42 +605,8 @@ uint32_t Application::respectAlignment(uint32_t size) {
     return size + align_remainder;
 }
 
-void Application::initCompute(VectorXR &x, VectorXR &v, VectorXR &f, std::vector<Vector32i> &id,
-                              std::vector<VectorXR> &data, float ts) {
 
-    m_numDof = int(x.size());
-    size_t color_count = id.size();
-
-    initComputeBuffers(m_numDof, id, data);
-
-    VectorXR zero(m_numDof);
-    zero.setZero();
-    m_queue.writeBuffer(m_piBuffer, 0, zero.data(), m_numDof * sizeof(float));
-    m_queue.writeBuffer(m_pfBuffer, 0, zero.data(), m_numDof * sizeof(float));
-    m_queue.writeBuffer(m_xBuffer, 0, x.data(), m_numDof * sizeof(float));
-    m_queue.writeBuffer(m_vBuffer, 0, v.data(), m_numDof * sizeof(float));
-    m_queue.writeBuffer(m_fBuffer, 0, f.data(), m_numDof * sizeof(float));
-    StepData stepData{};
-    stepData.num_dof = m_numDof;
-    stepData.time_step = ts;
-    m_queue.writeBuffer(m_stepDataBuffer, 0, &stepData, sizeof(StepData));
-
-    m_idxSizes.reserve(color_count);
-    m_dataSizes.reserve(color_count);
-    for (int i = 0; i < int(color_count); ++i) {
-        m_queue.writeBuffer(m_idxBuffer[i], 0, id[i].data(), id[i].size() * sizeof(uint32_t));
-        m_idxSizes[i] = int(id[i].size());
-
-        m_queue.writeBuffer(m_dataBuffer[i], 0, data[i].data(), data[i].size() * sizeof(float));
-        m_dataSizes[i] = int(data[i].size());
-
-        uint32_t constraintCount = id[i].size() / 2;
-        m_queue.writeBuffer(m_stenCountBuffer[i], 0, &constraintCount, sizeof(uint32_t));
-    }
-
-}
-
-void Application::onComputeOpt(int color_count) {
+void Application::computeStretch(int color_count) {
 
     CommandEncoderDescriptor encoderDesc = Default;
     CommandEncoder encoder = nullptr;
@@ -724,13 +617,10 @@ void Application::onComputeOpt(int color_count) {
 
     for (int i = 0; i < color_count; ++i) {
 
-        setConstraintBindings(m_numDof, m_idxSizes[i], m_dataSizes[i], i);
-        createComputePipeline(ComputeOperation::PROJECT_STRETCH);
-
         encoder = m_device.createCommandEncoder(encoderDesc);
         m_computePass = encoder.beginComputePass(computePassDesc);
-        m_computePass.setPipeline(m_computePipeline);
-        m_computePass.setBindGroup(0, m_computeBindGroup, 0, nullptr);
+        m_computePass.setPipeline(m_stretchConstraint_BindPipe[i].pipeline);
+        m_computePass.setBindGroup(0, m_stretchConstraint_BindPipe[i].bindGroup, 0, nullptr);
         m_computePass.dispatchWorkgroups(64, 1, 1);
         m_computePass.end();
         if (i != color_count - 1) {
@@ -738,10 +628,11 @@ void Application::onComputeOpt(int color_count) {
         }
         CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
         m_queue.submit(commands);
+        encoder.release();
     }
 }
 
-void Application::readP(VectorXR &p){
+void Application::readP(VectorXR &p) {
 
     CommandEncoderDescriptor encoderDesc = Default;
     CommandEncoder encoder = nullptr;
@@ -752,19 +643,22 @@ void Application::readP(VectorXR &p){
 
     CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
     m_queue.submit(commands);
+    encoder.release();
 
 
     bool done = false;
     auto handle = m_mapBuffer.mapAsync(MapMode::Read, 0, m_numDof * sizeof(float),
                                        [&](BufferMapAsyncStatus status) {
-        if (status == BufferMapAsyncStatus::Success) {
-            const auto *output = (const float *) m_mapBuffer.getConstMappedRange(0, m_numDof * sizeof(float ));
-            Eigen::Map<const VectorXR> newP(output, m_numDof);
-            p = newP;
-            m_mapBuffer.unmap();
-        }
-        done = true;
-    });
+                                           if (status == BufferMapAsyncStatus::Success) {
+                                               const auto *output = (const float *) m_mapBuffer.getConstMappedRange(0,
+                                                                                                                    m_numDof *
+                                                                                                                    sizeof(float));
+                                               Eigen::Map<const VectorXR> newP(output, m_numDof);
+                                               p = newP;
+                                               m_mapBuffer.unmap();
+                                           }
+                                           done = true;
+                                       });
 
 
     while (!done) {
@@ -795,20 +689,30 @@ void Application::computeSimulation(ComputeOperation compute_operation) {
     computePassDesc.timestampWrites = nullptr;
 
 
-    setSimulationBindings(compute_operation);
-    createComputePipeline(compute_operation);
-
     encoder = m_device.createCommandEncoder(encoderDesc);
     m_computePass = encoder.beginComputePass(computePassDesc);
-    m_computePass.setPipeline(m_computePipeline);
-    m_computePass.setBindGroup(0, m_computeBindGroup, 0, nullptr);
+    switch (compute_operation) {
+
+        case COMPUTE_P:
+            m_computePass.setPipeline(m_computeP_BindPipe.pipeline);
+            m_computePass.setBindGroup(0, m_computeP_BindPipe.bindGroup, 0, nullptr);
+            break;
+        case COMPUTE_V:
+            m_computePass.setPipeline(m_computeV_BindPipe.pipeline);
+            m_computePass.setBindGroup(0, m_computeV_BindPipe.bindGroup, 0, nullptr);
+            break;
+        case PROJECT_STRETCH:
+            break;
+    }
+
     m_computePass.dispatchWorkgroups(64, 1, 1);
     m_computePass.end();
     CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
     m_queue.submit(commands);
+    encoder.release();
 }
 
-void Application::setSimulationBindings(ComputeOperation compute_operation) {
+BindGroup Application::createSimulationBindings(ComputeOperation compute_operation) {
     size_t binding_count;
     switch (compute_operation) {
         case COMPUTE_P:
@@ -828,7 +732,7 @@ void Application::setSimulationBindings(ComputeOperation compute_operation) {
     m_computeBindingLayoutEntries[0].binding = 0;
     m_computeBindingLayoutEntries[0].visibility = ShaderStage::Compute;
     m_computeBindingLayoutEntries[0].buffer.minBindingSize = m_numDof * sizeof(float);
-    if(compute_operation == ComputeOperation::COMPUTE_P)
+    if (compute_operation == ComputeOperation::COMPUTE_P)
         m_computeBindingLayoutEntries[0].buffer.type = BufferBindingType::ReadOnlyStorage;
     else
         m_computeBindingLayoutEntries[0].buffer.type = BufferBindingType::Storage;
@@ -844,7 +748,7 @@ void Application::setSimulationBindings(ComputeOperation compute_operation) {
     //V Buffer
     m_computeBindingLayoutEntries[2].binding = 2;
     m_computeBindingLayoutEntries[2].visibility = ShaderStage::Compute;
-    m_computeBindingLayoutEntries[2].buffer.minBindingSize = m_numDof * sizeof(float );
+    m_computeBindingLayoutEntries[2].buffer.minBindingSize = m_numDof * sizeof(float);
     m_computeBindingLayoutEntries[2].buffer.type = BufferBindingType::Storage;
     m_computeBindingLayoutEntries[2].buffer.hasDynamicOffset = false;
 
@@ -855,7 +759,7 @@ void Application::setSimulationBindings(ComputeOperation compute_operation) {
     m_computeBindingLayoutEntries[3].buffer.type = BufferBindingType::ReadOnlyStorage;
     m_computeBindingLayoutEntries[3].buffer.hasDynamicOffset = false;
 
-    if(compute_operation == ComputeOperation::COMPUTE_P){
+    if (compute_operation == ComputeOperation::COMPUTE_P) {
         //F Buffer
         m_computeBindingLayoutEntries[4].binding = 4;
         m_computeBindingLayoutEntries[4].visibility = ShaderStage::Compute;
@@ -910,7 +814,7 @@ void Application::setSimulationBindings(ComputeOperation compute_operation) {
     entries[3].size = sizeof(StepData);
     entries[3].offset = 0;
 
-    if(compute_operation == ComputeOperation::COMPUTE_P){
+    if (compute_operation == ComputeOperation::COMPUTE_P) {
         //F Buffer
         entries[4].binding = 4;
         entries[4].buffer = m_fBuffer;
@@ -928,5 +832,140 @@ void Application::setSimulationBindings(ComputeOperation compute_operation) {
     bindGroupDesc.layout = m_computeBindGroupLayout;
     bindGroupDesc.entryCount = entries.size();
     bindGroupDesc.entries = (WGPUBindGroupEntry *) entries.data();
-    m_computeBindGroup = m_device.createBindGroup(bindGroupDesc);
+    return m_device.createBindGroup(bindGroupDesc);
+}
+
+void Application::initSimulationStruct(VectorXR &x, VectorXR &v, VectorXR &f, float ts) {
+    m_numDof = int(x.size());
+
+    ///////////////////////////////////////////
+    //////   CREATE AND WRITE BUFFERS    //////
+    ///////////////////////////////////////////
+    //Map Buffer for reading the texture
+    BufferDescriptor buffDesc;
+
+    //Map Buffer
+    buffDesc.mappedAtCreation = false;
+    buffDesc.size = m_numDof * sizeof(float);
+    buffDesc.usage = BufferUsage::CopyDst | BufferUsage::MapRead;
+    buffDesc.mappedAtCreation = false;
+    m_mapBuffer = m_device.createBuffer(buffDesc);
+
+    //X Buffer
+    buffDesc.size = m_numDof * sizeof(float);
+    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopySrc | BufferUsage::CopyDst;
+    m_xBuffer = m_device.createBuffer(buffDesc);
+
+    //Pi Buffer
+    buffDesc.size = m_numDof * sizeof(float);
+    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopyDst;
+    m_piBuffer = m_device.createBuffer(buffDesc);
+
+    //Pf Buffer
+    buffDesc.size = m_numDof * sizeof(float);
+    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopySrc | BufferUsage::CopyDst;
+    m_pfBuffer = m_device.createBuffer(buffDesc);
+
+    //V Buffer
+    buffDesc.size = m_numDof * sizeof(float);
+    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopyDst;
+    m_vBuffer = m_device.createBuffer(buffDesc);
+
+    //F Buffer
+    buffDesc.size = m_numDof * sizeof(float);
+    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopyDst;
+    m_fBuffer = m_device.createBuffer(buffDesc);
+
+    //Time Step Buffer
+    buffDesc.size = sizeof(StepData);
+    buffDesc.usage = BufferUsage::Storage | BufferUsage::CopyDst;
+    m_stepDataBuffer = m_device.createBuffer(buffDesc);
+
+    VectorXR zero(m_numDof);
+    zero.setZero();
+    m_queue.writeBuffer(m_piBuffer, 0, zero.data(), m_numDof * sizeof(float));
+    m_queue.writeBuffer(m_pfBuffer, 0, zero.data(), m_numDof * sizeof(float));
+    m_queue.writeBuffer(m_xBuffer, 0, x.data(), m_numDof * sizeof(float));
+    m_queue.writeBuffer(m_vBuffer, 0, v.data(), m_numDof * sizeof(float));
+    m_queue.writeBuffer(m_fBuffer, 0, f.data(), m_numDof * sizeof(float));
+    StepData stepData{};
+    stepData.num_dof = m_numDof;
+    stepData.time_step = ts;
+    m_queue.writeBuffer(m_stepDataBuffer, 0, &stepData, sizeof(StepData));
+
+    ////////////////////////////////////////////
+    /////   CREATE PIPELINE & BINDINGS    //////
+    ////////////////////////////////////////////
+    //COMPUTE_P BINDING AND PIPELINE
+    m_computeP_BindPipe.bindGroup = createSimulationBindings(ComputeOperation::COMPUTE_P);
+    m_computeP_BindPipe.pipeline = createComputePipeline(ComputeOperation::COMPUTE_P);
+
+    //COMPUTE_V BINDING AND PIPELINE
+    m_computeV_BindPipe.bindGroup = createSimulationBindings(ComputeOperation::COMPUTE_V);
+    m_computeV_BindPipe.pipeline = createComputePipeline(ComputeOperation::COMPUTE_V);
+}
+
+void
+Application::initConstraintsStruct(ConstraintType constraint, std::vector<Vector32i> &id, std::vector<VectorXR> &data) {
+
+    static_cast<void>(constraint);
+    ///////////////////////////////////////////
+    //////   CREATE AND WRITE BUFFERS    //////
+    ///////////////////////////////////////////
+
+    //We now create a buffer for each color
+    BufferDescriptor buffDesc;
+
+    size_t color_count = id.size();
+    m_idxBuffer.reserve(color_count);
+    m_dataBuffer.reserve(color_count);
+    m_stenCountBuffer.reserve(color_count);
+
+    size_t idx_size, data_size;
+    for (size_t i = 0; i < color_count; ++i) {
+        idx_size = id[i].size();
+        data_size = data[i].size();
+
+        //Data Buffer
+        buffDesc.size = data_size * sizeof(float);
+        buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage;
+        m_dataBuffer[i] = m_device.createBuffer(buffDesc);
+
+        //Index Buffer
+        buffDesc.size = idx_size * sizeof(uint32_t);
+        buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage;
+        m_idxBuffer[i] = m_device.createBuffer(buffDesc);
+
+        //Compute size buffer
+        buffDesc.size = sizeof(uint32_t);
+        buffDesc.usage = BufferUsage::CopyDst | BufferUsage::Storage;
+        m_stenCountBuffer[i] = m_device.createBuffer(buffDesc);
+    }
+
+
+    m_idxSizes.reserve(color_count);
+    m_dataSizes.reserve(color_count);
+    for (int i = 0; i < int(color_count); ++i) {
+        m_queue.writeBuffer(m_idxBuffer[i], 0, id[i].data(), id[i].size() * sizeof(uint32_t));
+        m_idxSizes[i] = int(id[i].size());
+
+        m_queue.writeBuffer(m_dataBuffer[i], 0, data[i].data(), data[i].size() * sizeof(float));
+        m_dataSizes[i] = int(data[i].size());
+
+        uint32_t constraintCount = id[i].size() / 2;
+        m_queue.writeBuffer(m_stenCountBuffer[i], 0, &constraintCount, sizeof(uint32_t));
+    }
+
+    ////////////////////////////////////////////
+    /////   CREATE PIPELINE & BINDINGS    //////
+    ////////////////////////////////////////////
+    m_stretchConstraint_BindPipe.reserve(color_count);
+
+    for (int i = 0; i < int(color_count); ++i) {
+        idx_size = id[i].size();
+        data_size = data[i].size();
+        m_stretchConstraint_BindPipe[i].bindGroup = createConstraintBindings(idx_size, data_size, i);
+        m_stretchConstraint_BindPipe[i].pipeline = createComputePipeline(ComputeOperation::PROJECT_STRETCH);
+    }
+
 }
