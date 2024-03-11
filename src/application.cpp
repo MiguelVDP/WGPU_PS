@@ -227,10 +227,19 @@ bool Application::initWindowAndDevice(int width, int height) {
 
     RequestAdapterOptions adapterOpts;
     adapterOpts.setDefault();
+    adapterOpts.powerPreference = WGPUPowerPreference::WGPUPowerPreference_HighPerformance;
     m_surface = glfwGetWGPUSurface(m_instance, m_window);
     adapterOpts.compatibleSurface = m_surface;
 
     m_adapter = m_instance.requestAdapter(adapterOpts);
+//    AdapterProperties adapter_prop;
+//    m_adapter.getProperties(&adapter_prop);
+//    printf("WGPUAdapterProperties {\n""\tvendorID: %" PRIu32 "\n""\tvendorName: %s\n""\tarchitecture: %s\n"
+//           "\tdeviceID: %" PRIu32 "\n""\tname: %s\n""\tdriverDescription: %s\n""\tadapterType: %#.8x\n"
+//           "\tbackendType: %#.8x\n""}\n",
+//           adapter_prop.vendorID, adapter_prop.vendorName, adapter_prop.architecture, adapter_prop.deviceID,
+//           adapter_prop.name, adapter_prop.driverDescription, adapter_prop.adapterType,
+//           adapter_prop.backendType);
 
     std::cout << "Adapter successfully initialized!" << std::endl;
 
@@ -248,7 +257,7 @@ bool Application::initWindowAndDevice(int width, int height) {
     requiredLimits.limits.maxVertexAttributes = 3;
     requiredLimits.limits.maxVertexBuffers = 2;
     requiredLimits.limits.maxInterStageShaderComponents = 10;
-    requiredLimits.limits.maxBufferSize = 10000 * sizeof(double);
+    requiredLimits.limits.maxBufferSize = supportedLimits.limits.maxBufferSize;
     requiredLimits.limits.maxVertexBufferArrayStride = sizeof(Object);
     requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
     requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
@@ -274,16 +283,16 @@ bool Application::initWindowAndDevice(int width, int height) {
     requiredLimits.limits.maxStorageTexturesPerShaderStage = 2;
 
     // The maximum value for respectively w, h and d
-    requiredLimits.limits.maxComputeWorkgroupSizeX = 32;
+    requiredLimits.limits.maxComputeWorkgroupSizeX = 128;
     requiredLimits.limits.maxComputeWorkgroupSizeY = 1;
     requiredLimits.limits.maxComputeWorkgroupSizeZ = 1;
 
     // The maximum value of the product w * h * d
-    requiredLimits.limits.maxComputeInvocationsPerWorkgroup = 64;
+    requiredLimits.limits.maxComputeInvocationsPerWorkgroup = 128;
 
     // And the maximum value of max(x, y, z)
     // (It is 2 because workgroupCount = 64 / 32 = 2)
-    requiredLimits.limits.maxComputeWorkgroupsPerDimension = 64;
+    requiredLimits.limits.maxComputeWorkgroupsPerDimension = 128;
 
     m_device = m_adapter.requestDevice(deviceDesc);
 
@@ -489,7 +498,7 @@ ComputePipeline Application::createComputePipeline(ComputeOperation shader) {
             entry_point = "projectStretchConstraint";
             break;
         case COMPUTE_P:
-            m_computeShaderModule = ResourceManager::loadShaderModule(RESOURCE_DIR "/ComputeP.wgsl", m_device);
+            m_computeShaderModule = ResourceManager::loadShaderModule(RESOURCE_DIR "/computeP.wgsl", m_device);
             entry_point = "computePredictedPos";
             break;
         case COMPUTE_V:
@@ -621,7 +630,7 @@ void Application::computeStretch(int color_count) {
         m_computePass = encoder.beginComputePass(computePassDesc);
         m_computePass.setPipeline(m_stretchConstraint_BindPipe[i].pipeline);
         m_computePass.setBindGroup(0, m_stretchConstraint_BindPipe[i].bindGroup, 0, nullptr);
-        m_computePass.dispatchWorkgroups(64, 1, 1);
+        m_computePass.dispatchWorkgroups(128, 1, 1);
         m_computePass.end();
         if (i != color_count - 1) {
             encoder.copyBufferToBuffer(m_pfBuffer, 0, m_piBuffer, 0, m_numDof * sizeof(float));
@@ -649,16 +658,14 @@ void Application::readP(VectorXR &p) {
     bool done = false;
     auto handle = m_mapBuffer.mapAsync(MapMode::Read, 0, m_numDof * sizeof(float),
                                        [&](BufferMapAsyncStatus status) {
-                                           if (status == BufferMapAsyncStatus::Success) {
-                                               const auto *output = (const float *) m_mapBuffer.getConstMappedRange(0,
-                                                                                                                    m_numDof *
-                                                                                                                    sizeof(float));
-                                               Eigen::Map<const VectorXR> newP(output, m_numDof);
-                                               p = newP;
-                                               m_mapBuffer.unmap();
-                                           }
-                                           done = true;
-                                       });
+        if (status == BufferMapAsyncStatus::Success) {
+            const auto *output = (const float *) m_mapBuffer.getConstMappedRange(0,m_numDof *sizeof(float));
+            Eigen::Map<const VectorXR> newP(output, m_numDof);
+            p = newP;
+            m_mapBuffer.unmap();
+        }
+        done = true;
+    });
 
 
     while (!done) {
@@ -705,7 +712,7 @@ void Application::computeSimulation(ComputeOperation compute_operation) {
             break;
     }
 
-    m_computePass.dispatchWorkgroups(64, 1, 1);
+    m_computePass.dispatchWorkgroups(128, 1, 1);
     m_computePass.end();
     CommandBuffer commands = encoder.finish(CommandBufferDescriptor{});
     m_queue.submit(commands);

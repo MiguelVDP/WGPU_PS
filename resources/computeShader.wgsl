@@ -4,7 +4,7 @@
 @group(0) @binding(3) var<storage, read> dataBuffer: array<f32>;
 @group(0) @binding(4) var<storage, read> dataSize: u32;
 
-@compute @workgroup_size(32)
+@compute @workgroup_size(128)
 fn projectStretchConstraint(@builtin(global_invocation_id) id: vec3<u32>) {
 
     if(id.x >= dataSize){
